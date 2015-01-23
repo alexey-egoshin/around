@@ -843,6 +843,79 @@ function routeWaveEnemy(from, to, enemy, callback){
 
 
 /**
+* поиск маршрута до любой из заданных баз с обходом полков неприятеля
+* волновым алгоритмом 
+* @param from начальная точка вида {lat:lat, lng:lng, radius:radius}
+* @param to  конечная точка (база) вида {lat:lat, lng:lng, radius:radius}
+* @param enemy массив полков неприятеля вида [{lat:lat, lng:lng, radius:radius}, ...]
+* @param callback функция обратного вызова в которую передается результат в виде
+* true(если маршрут найден) или false (если не найден)
+**/
+function findRouteToBase(from, to, enemy, callback){
+	console.log(from,to,enemy);
+	callback([]); return;
+	var waveLabel = []; /**волновая метка**/
+	var T = 0;/**время**/
+	var oldFront = [];/**старый фронт**/
+	var newFront = [];/**новый фронт**/
+	var prev = []; /**предки вершин**/
+	var curr = null;
+	var id = null;
+	for ( var i = 0; i < n; i++ ){
+		waveLabel[i] = -1;
+		prev[i] = 0;
+	}
+	var start = latlng2node_id([from.lat,from.lng]);
+    var targets = getTargetsNodesId(to);
+	waveLabel[start-1] = 0;
+	oldFront.push(start);
+	var banned = getBannedNodesId2(from, enemy);
+    
+	while (true){
+		//console.log(JSON.stringify(oldFront));
+		for ( var i = 0; i < oldFront.length; i++ ){
+			curr = oldFront[i];
+			//console.log('curr='+curr);
+			for ( j = index_from[curr-1]; j < index_from[curr-1] + index_size[curr-1]; j++ ){
+				id = roads[j].node_to;
+				if ( banned.indexOf(id) != -1 ) continue;
+				//console.log('id='+id);
+				//console.log('waveLabel[id]='+waveLabel[id-1] );
+				if ( waveLabel[id-1] == -1 ){
+					waveLabel[id-1] = T + 1;
+					newFront.push(id);
+					prev[id-1] = curr;
+				}
+				
+				if ( targets.indexOf(id) != -1 ){
+					//решение найдено
+					//вывод результатов
+					var end = targets[targets.indexOf(id)];
+					var path = [];
+					path.push(end);
+					curr = end;
+					while( prev[curr-1] != start ){
+						path.push(prev[curr-1]);
+						curr = prev[curr-1];
+					}
+					path.push(start);
+					path.reverse();
+					callback(path2route(path));
+					return true;
+				}
+			}
+		}
+		if ( newFront.length == 0 ){
+			callback(false);
+			return false;
+		}
+		oldFront = newFront;
+		newFront = [];
+		T++;
+	}
+}
+
+/**
 * преобразование последовательности id узлов в массив путь
 * в виде
 * массива точек [[lat1, lng1], [lat2,lng2],...]]
@@ -996,6 +1069,35 @@ function getBannedNodesId(enemy){
 	return restricted;
 }
 
+/**
+* получение всех запрещенных узлов 2 вариант (исключаем узлы в радиусе полка)
+**/
+function getBannedNodesId2(from, enemy){
+	var restricted = [];
+	var condition = false;
+    for ( var i = 0; i < enemy.length; i++ ){
+		for ( var j = 0; j < n; j++ ){
+			condition = distance([enemy[i].lat,enemy[i].lng],nodes[j]) <= enemy[i].radius * enemy[i].radius &&
+                        distance([from.lat,from.lng],nodes[j]) >= from.radius * from.radius;
+            if ( condition ){
+				restricted.push(j+1);
+			}
+		}
+	}
+	return restricted;
+}
+
+/**
+* получение всех целевых узлов
+**/
+function getTargetsNodesId(to){
+	var targets = [];
+	for ( var i = 0; i < to.length; i++ ){
+		targets.push(latlng2node_id([to[i][0], to[i][1]]));
+	}
+	return targets;
+}
+
 exports.init = init;
 exports.query = query;
 exports.loadNodes = loadNodes;
@@ -1014,3 +1116,4 @@ exports.bypassingWide = bypassingWide;
 exports.bypassingWideEnemy = bypassingWideEnemy;
 exports.routeWave = routeWave;
 exports.routeWaveEnemy = routeWaveEnemy;
+exports.findRouteToBase = findRouteToBase;

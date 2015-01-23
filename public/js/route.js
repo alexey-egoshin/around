@@ -11,7 +11,7 @@ var Route =
     directionsService: new google.maps.DirectionsService(),
 	
 	/**получение маршрута с различных сервисов
-    * @param start, end точки начала и конца пути, представленные как массивы [lat,lng]
+    * @param start, end точки начала и конца пути, представленные как объекты {lat:lat, lng:lng, radius:radius}
 	* @param enemies массив полков неприятеля вида [{lat:lat, lng:lng, radius:radius}, ...]
     * @param callback объект в который передается маршрут в виде массива точек и объект полка
     **/
@@ -36,7 +36,10 @@ var Route =
 			Route.getRouteSpatialitebypassingWideEnemy(start,end,enemies,callback);
 		}else if( Route.service == 'spatialite_routewaveenemy' ){
 			Route.getRouteSpatialiterouteWaveEnemy(start,end,enemies,callback);
-		}else{
+		}else if( Route.service == 'spatialite_findroutetobase' ){
+			Route.getRouteSpatialiteFindRouteToBase(start,end,enemies,callback);
+		}
+		else{
             Route.getRouteSpatialiteQuery(start,end,callback);
         }
     },
@@ -46,8 +49,8 @@ var Route =
     * @param callback объект в который передается маршрут в виде массива точек и объект полка
     **/
 	getRouteGoogle: function(start,end,callback){
-		var start = new google.maps.LatLng(start[0], start[1]);
-		var end = new google.maps.LatLng(end[0], end[1]);
+		var start = new google.maps.LatLng(start.lat, start.lng);
+		var end = new google.maps.LatLng(end.lat, end.lng);
 		var request = {
 					  origin: start,
 					  destination: end,
@@ -76,8 +79,8 @@ var Route =
     **/
     
     getRouteOSRM: function(start,end,callback){
-		var start = [start[0], start[1]];
-		var end = [end[0], end[1]];
+		var start = [start.lat, start.lng];
+		var end = [end.lat, end.lng];
 		var params = 'data=' + JSON.stringify([start,end]);
 		Ajax.sendRequest('GET', '/routeosrm', params, function(route) {
 			console.log(JSON.stringify(route));
@@ -93,8 +96,8 @@ var Route =
     **/
     
     getRouteSpatialiteQuery: function(start,end,callback){
-		var start = [start[0], start[1]];
-		var end = [end[0], end[1]];
+		var start = [start.lat, start.lng];
+		var end = [end.lat, end.lng];
 		var params = 'data=' + JSON.stringify([start,end]);
 		console.log(params);
 		Ajax.sendRequest('GET', '/routequery', params, function(route) {
@@ -110,8 +113,8 @@ var Route =
     **/
     
     getRouteSpatialiteDijkstra: function(start,end,callback){
-		var start = [start[0], start[1]];
-		var end = [end[0], end[1]];
+		var start = [start.lat, start.lng];
+		var end = [end.lat, end.lng];
 		var params = 'data=' + JSON.stringify([start,end]);
 		console.log(params);
 		Ajax.sendRequest('GET', '/routedijkstra', params, function(route) {
@@ -129,8 +132,8 @@ var Route =
     
     getRouteSpatialiteDijkstraEnemy: function(start,end,enemies,callback){
 		console.log(enemies);
-		var start = [start[0], start[1]];
-		var end = [end[0], end[1]];
+		var start = [start.lat, start.lng];
+		var end = [end.lat, end.lng];
 		var params = 'data=' + JSON.stringify([start,end])+'&enemy='+JSON.stringify(enemies);
 		console.log(params);
 		Ajax.sendRequest('GET', '/routedijkstraenemy', params, function(route) {
@@ -148,8 +151,8 @@ var Route =
     
     getRouteSpatialitebypassingWideEnemy: function(start,end,enemies,callback){
 		console.log(enemies);
-		var start = [start[0], start[1]];
-		var end = [end[0], end[1]];
+		var start = [start.lat, start.lng];
+		var end = [end.lat, end.lng];
 		var params = 'data=' + JSON.stringify([start,end])+'&enemy='+JSON.stringify(enemies);
 		console.log(params);
 		Ajax.sendRequest('GET', '/routebypassingwideenemy', params, function(route) {
@@ -166,8 +169,8 @@ var Route =
     
     getRouteSpatialitebypassingWide: function(start,end,callback){
 		console.log(enemies);
-		var start = [start[0], start[1]];
-		var end = [end[0], end[1]];
+		var start = [start.lat, start.lng];
+		var end = [end.lat, end.lng];
 		var params = 'data=' + JSON.stringify([start,end]);
 		console.log(params);
 		Ajax.sendRequest('GET', '/routebypassingwide', params, function(route) {
@@ -184,8 +187,8 @@ var Route =
     
     getRouteSpatialiterouteWave: function(start,end,callback){
 		console.log(enemies);
-		var start = [start[0], start[1]];
-		var end = [end[0], end[1]];
+		var start = [start.lat, start.lng];
+		var end = [end.lat, end.lng];
 		var params = 'data=' + JSON.stringify([start,end]);
 		console.log(params);
 		Ajax.sendRequest('GET', '/routewave', params, function(route) {
@@ -203,11 +206,28 @@ var Route =
     
     getRouteSpatialiterouteWaveEnemy: function(start,end,enemies,callback){
 		console.log(enemies);
-		var start = [start[0], start[1]];
-		var end = [end[0], end[1]];
+		var start = [start.lat, start.lng];
+		var end = [end.lat, end.lng];
 		var params = 'data=' + JSON.stringify([start,end])+'&enemy='+JSON.stringify(enemies);
 		console.log(params);
 		Ajax.sendRequest('GET', '/routewaveenemy', params, function(route) {
+			//console.log(JSON.stringify(route));
+            callback(route);
+		});
+	},
+	
+	/**
+    * получение маршрута от модуля Spatialite метод findRouteToBase'
+    * @param start, end точки начала и конца пути, представленные как массивы [lat,lng]
+	* @param enemies массив полков неприятеля вида [{lat:lat, lng:lng, radius:radius}, ...]
+    * @param callback функция обратного вызова в которую передается маршрут и объект полка
+    **/
+    
+    getRouteSpatialiteFindRouteToBase: function(start,end,enemies,callback){
+		console.log(enemies);
+		var params = 'data=' + JSON.stringify([start,end])+'&enemy='+JSON.stringify(enemies);
+		console.log(params);
+		Ajax.sendRequest('GET', '/findroutetobase', params, function(route) {
 			//console.log(JSON.stringify(route));
             callback(route);
 		});
@@ -221,8 +241,8 @@ var Route =
     **/
     
     getRouteSpatialiteDijkstra3: function(start,end,callback){
-		var start = [start[0], start[1]];
-		var end = [end[0], end[1]];
+		var start = [start.lat, start.lng];
+		var end = [end.lat, end.lng];
 		var params = 'data=' + JSON.stringify([start,end]);
 		console.log(params);
 		Ajax.sendRequest('GET', '/routedijkstra3', params, function(route) {

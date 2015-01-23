@@ -161,6 +161,21 @@ app.get('/routewaveenemy',function(req,res){
      
 });
 
+/*маршрут для GET запроса маршрута от модуля spatialite через findRouteTobase*/
+app.get('/findroutetobase',function(req,res){
+	var data = JSON.parse(req.query.data);
+	var enemy = JSON.parse(req.query.enemy);
+	var source = data[0];
+	var target = data[1];
+	time.start();
+	spatialite.findRouteToBase(source, target, enemy, function(route){
+		console.log('Executing time: '+time.stop());
+		res.writeHead(200, {"Content-Type": "text/html","Access-Control-Allow-Origin": "*"});
+		res.write(JSON.stringify(route));
+		res.end();
+	});
+     
+});
 
 /*маршрут для GET запроса всех путей от модуля spatialite*/
 app.get('/allroads',function(req,res){
@@ -169,9 +184,7 @@ app.get('/allroads',function(req,res){
 		res.write(JSON.stringify(roads));
 		res.end();
 	});
-	
-	
-     
+	   
 })
 
 /*маршрут для GET запроса всех узлов от spatialite*/

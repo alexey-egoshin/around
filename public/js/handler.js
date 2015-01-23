@@ -1,5 +1,5 @@
-var start = null; //координаты стартовой точки
-var end = null; //координаты конечной точки
+var start = null; //объект стартовой точки
+var end = null; //объект конечной точки
 var startPoint = null; //круг начальной точки
 var endPoint = null; //круг конечной точки
 var route_line = L.polyline([],{color:'blue'}).addTo(map);
@@ -15,11 +15,11 @@ var restr_nodes = []; //массив кругов запрещенных узл�
 **/
 map.on('click',function(e){
 	if ( start == null ){
-		start = [e.latlng.lat,e.latlng.lng];
-		startPoint = L.circle(L.latLng(start[0],start[1]),5,{color:'red'}).addTo(map);
+		start = {lat:e.latlng.lat, lng:e.latlng.lng, radius:radius};
+		startPoint = L.circle(L.latLng(start.lat,start.lng),5,{color:'red'}).addTo(map);
 	}else if ( end == null ){
-		end = [e.latlng.lat,e.latlng.lng];
-		endPoint = L.circle(L.latLng(end[0],end[1]),5,{color:'blue'}).addTo(map);
+		end = {lat:e.latlng.lat, lng:e.latlng.lng, radius:radius};
+		endPoint = L.circle(L.latLng(end.lat,end.lng),5,{color:'blue'}).addTo(map);
 		//alert('route request:'+JSON.stringify(start)+':'+JSON.stringify(end));
 		showRoute(start, end, enemies);
 		
