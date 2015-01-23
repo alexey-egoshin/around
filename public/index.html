@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>карта для проверки маршрутов</title>
+  
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta charset="utf-8" />
+	<link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.css" />
+	<link rel="stylesheet" href="/css/style.css" />
+    <script src="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.js"></script>
+	<script src="/js/leaflet-providers.js"></script>
+	<script src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false"></script>
+    <script type="text/javascript" src="/js/ajax.js"></script>
+    <script type="text/javascript" src="/js/route.js"></script>
+	<script type="text/javascript" src="/js/helper.js"></script>
+	<script type="text/javascript" src="/js/time.js"></script>
+	<script type="text/javascript" src="/js/index.js"></script>
+</head>
+    <body>
+        <div id="map-block"></div>
+		<hr size="5"/>
+		<div class="service">
+			<select id="service">
+				<option value="google" >Google</option>
+				<option value="osrm" >OSRM</option>
+				<option selected="selected" value="spatialite_query" >Spatialite</option>
+				<option value="spatialite_dijkstra" >Dijkstra</option>
+				<option value="spatialite_dijkstra3" >Dijkstra3</option>
+				<option value="spatialite_dijkstra_enemy" >Dijkstra Enemy</option>
+				<option value="spatialite_routebypassingwide" >Bypassing Wide</option>
+				<option value="spatialite_routewave" >Wave Algo</option>
+				<option value="spatialite_routebypassingwideenemy" >Bypassing Wide Enemy</option>
+				<option value="spatialite_routewaveenemy" >Wave Algo Enemy</option>
+			</select>
+			<button id="all-roads">All roads</button>
+			<button id="all-nodes">All nodes</button>
+			<button id="del-enemies">Del. enemy</button>
+			<button id="get-restr">Rest. nodes</button>
+			<div id="preloader"><img src="/img/load.gif"/></div>
+			<label class="time-label">Time: </label><span class="time-label" id="time"></span>
+		</div>
+		<script type="text/javascript" src="/js/map.js"></script>
+		<script type="text/javascript" src="/js/handler.js"></script>
+    </body>
+</html>

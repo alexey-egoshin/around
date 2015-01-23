@@ -1,0 +1,105 @@
+body
+{
+    background-image: url(/img/bg/2.jpg);
+}
+
+#map-block
+{
+	width: 1024px; 
+    height: 768px;
+}
+
+
+#wrap-start
+{
+    background: rgba(0, 0, 0, 0.7);
+    height: 100%;
+    position: fixed;
+    width: 100%;
+    z-index: 9999;
+    top: 0;
+    left: 0;   
+}
+
+#start
+{
+    position: fixed;
+    top: 200px;
+    left: 50%;
+    margin-left: -200px;
+    width: 400px;
+    height: 500px;
+    position: fixed;
+    background-image: url(/img/bg/1.jpg);
+    opacity: 1.0;
+    border-radius: 10px;
+    font-family: Verdana;
+    font-size: 18px;
+    color: #fff;
+    
+    text-align: center;    
+}
+
+#start table
+{
+    width: 85%;
+}
+
+#start input, #start select 
+{
+    font-size: 18px;
+    border-radius: 5px;
+    width: 150px;
+} 
+
+
+button
+{
+	font-size: 24px;
+	padding: 5px;
+	font-family: Verdana;
+	z-index:2;
+}
+
+.log-message
+{
+    margin-top: 5px;
+    width: 1024px;
+    height: 100px;
+    background-color: #000;
+    color: #ccc;
+    overflow: scroll;
+}
+
+select#service
+{
+	font-size: 24px;
+	float: left;
+	padding: 5px;
+	font-family: Verdana;
+}
+
+#preloader
+{
+	position: absolute;
+	top: 350px;
+	left: 400px;
+	z-index:1;
+	display:none;
+}
+
+.time-label
+{
+	padding: 6px;
+	font-size: 24px;
+	color: #ff0;
+	font-family: Verdana;
+	background-color: #000;
+}
+
+hr
+{
+	width: 1024px;
+	margin-left: 0;
+	background-color: #ccc;
+}
