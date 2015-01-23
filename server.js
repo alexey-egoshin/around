@@ -168,7 +168,7 @@ app.get('/findroutetobase',function(req,res){
 	var source = data[0];
 	var target = data[1];
 	time.start();
-	spatialite.findRouteToBase(source, target, enemy, function(route){
+	spatialite.findRouteToBase(0, source, target, enemy, function(route){
 		console.log('Executing time: '+time.stop());
 		res.writeHead(200, {"Content-Type": "text/html","Access-Control-Allow-Origin": "*"});
 		res.write(JSON.stringify(route));

@@ -1,5 +1,5 @@
 var sqlite = require('spatialite');
-var db = new sqlite.Database('RU-ME2.sqlite');
+var db = new sqlite.Database('RU-ME3.sqlite');
 var debug = require('./debug.js');
 
 var roads = []; /**массив дорог**/
@@ -851,9 +851,9 @@ function routeWaveEnemy(from, to, enemy, callback){
 * @param callback функция обратного вызова в которую передается результат в виде
 * true(если маршрут найден) или false (если не найден)
 **/
-function findRouteToBase(from, to, enemy, callback){
-	console.log(from,to,enemy);
-	callback([]); return;
+function findRouteToBase(index, from, to, enemy, callback){
+	//console.log(from,to,enemy);
+	//callback([]); return;
 	var waveLabel = []; /**волновая метка**/
 	var T = 0;/**время**/
 	var oldFront = [];/**старый фронт**/
@@ -861,12 +861,20 @@ function findRouteToBase(from, to, enemy, callback){
 	var prev = []; /**предки вершин**/
 	var curr = null;
 	var id = null;
+	var start = null;
 	for ( var i = 0; i < n; i++ ){
 		waveLabel[i] = -1;
 		prev[i] = 0;
 	}
-	var start = latlng2node_id([from.lat,from.lng]);
-    var targets = getTargetsNodesId(to);
+	if ( index != 0 ){
+		/*сдвигаем точку в случ. порядке*/
+		start = latlng2node_id([from.lat + from.radius*(2*Math.random()-1),from.lng + from.radius*(2*Math.random()-1)]);
+	}else{
+		start = latlng2node_id([from.lat,from.lng]);
+	} 
+	
+	var targets = getTargetsNodesId2(to);
+	console.log(JSON.stringify(start)+':'+JSON.stringify(targets));
 	waveLabel[start-1] = 0;
 	oldFront.push(start);
 	var banned = getBannedNodesId2(from, enemy);
@@ -906,8 +914,14 @@ function findRouteToBase(from, to, enemy, callback){
 			}
 		}
 		if ( newFront.length == 0 ){
-			callback(false);
-			return false;
+			if ( index < 10 ){
+				index++;
+				findRouteToBase(index, from, to, enemy, callback);
+				return false;
+			}else{
+				callback([]);
+				return false;
+			}
 		}
 		oldFront = newFront;
 		newFront = [];
@@ -1096,6 +1110,40 @@ function getTargetsNodesId(to){
 		targets.push(latlng2node_id([to[i][0], to[i][1]]));
 	}
 	return targets;
+}
+
+/**
+* получение всех целевых узлов (узлов в радиусе базы)
+**/
+function getTargetsNodesId2(to){
+	var targets = [];
+	var node_id = 1;
+	var minDist = distance([to.lat,to.lng], nodes[0]);
+	for ( var i = 0; i < n; i++ ){
+		if ( distance([to.lat,to.lng],nodes[i]) <= to.radius * to.radius ){
+			targets.push(latlng2node_id([nodes[i].lat, nodes[i].lng]));
+		}
+		var currDist = distance([to.lat,to.lng], nodes[i]);
+		if ( currDist < minDist ){
+			node_id = nodes[i].node_id;
+			minDist = currDist;
+		}
+	}
+	targets.push(node_id);
+	return targets;
+}
+
+/**
+* перемещение точки
+* @param dot объект точки вида {lat:lat, lng:lng,radius:radius}
+* @return dot_new объект точки вида {lat:lat, lng:lng,radius:radius}
+**/
+function randomMoveDot(dot){
+	var radius = dot.radius;
+	var newDot = {lat:0, lng:0, radius: radius};
+	newDot.lat = dot.lat + radius * (2 * Math.random() - 1);
+	newDot.lng = dot.lng + radius * (2 * Math.random() - 1);
+	return newDot;
 }
 
 exports.init = init;

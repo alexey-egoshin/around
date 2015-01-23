@@ -16,11 +16,23 @@ var restr_nodes = []; //массив кругов запрещенных узл�
 map.on('click',function(e){
 	if ( start == null ){
 		start = {lat:e.latlng.lat, lng:e.latlng.lng, radius:radius};
-		startPoint = L.circle(L.latLng(start.lat,start.lng),5,{color:'red'}).addTo(map);
+		//startPoint = L.circle(L.latLng(start.lat,start.lng),5,{color:'red'}).addTo(map);
+		startPoint = L.marker(L.latLng(start.lat,start.lng), {draggable:true}).addTo(map);
+		startPoint.on('dragend',function(e){
+			start.lat = startPoint.getLatLng().lat;
+			start.lng = startPoint.getLatLng().lng;
+			showRoute(start, end, enemies);
+		});
 	}else if ( end == null ){
 		end = {lat:e.latlng.lat, lng:e.latlng.lng, radius:radius};
-		endPoint = L.circle(L.latLng(end.lat,end.lng),5,{color:'blue'}).addTo(map);
+		//endPoint = L.circle(L.latLng(end.lat,end.lng),5,{color:'blue'}).addTo(map);
 		//alert('route request:'+JSON.stringify(start)+':'+JSON.stringify(end));
+		endPoint = L.marker(L.latLng(end.lat,end.lng), { draggable:true}).addTo(map);
+		endPoint.on('dragend',function(e){
+			end.lat = endPoint.getLatLng().lat;
+			end.lng = endPoint.getLatLng().lng;
+			showRoute(start, end, enemies);
+		});
 		showRoute(start, end, enemies);
 		
 	}else{
@@ -33,6 +45,10 @@ map.on('click',function(e){
 		route_line.setLatLngs(dots2latlngs([]));
 	} 
 });
+
+
+
+
 
 
 /**
