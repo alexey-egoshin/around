@@ -55,8 +55,8 @@ body
 
 button
 {
-	font-size: 24px;
-	padding: 5px;
+	font-size: 1.2em;
+	padding: 3px;
 	font-family: Verdana;
 	z-index:2;
 }
@@ -71,12 +71,17 @@ button
     overflow: scroll;
 }
 
-select#service
+select.select
 {
-	font-size: 24px;
+	font-size: 1.2em;
 	float: left;
-	padding: 5px;
+	padding: 3px;
 	font-family: Verdana;
+}
+
+.service
+{
+	margin-right: 3px;
 }
 
 #preloader
@@ -90,8 +95,8 @@ select#service
 
 .time-label
 {
-	padding: 6px;
-	font-size: 24px;
+	padding: 3px;
+	font-size: 1.2em;
 	color: #ff0;
 	font-family: Verdana;
 	background-color: #000;
@@ -102,4 +107,14 @@ hr
 	width: 1024px;
 	margin-left: 0;
 	background-color: #ccc;
+}
+
+.rad
+{
+	border-radius: 5px;
+}
+
+.clr
+{
+	clear: both;
 }

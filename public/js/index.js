@@ -9,6 +9,12 @@ window.onload = function(){
 		}
 	};
 	
+	var selectRegion = document.getElementById('region');
+	initSpatialite(selectRegion.value);
+	selectRegion.onchange = function(){
+		initSpatialite(selectRegion.value);
+	};
+	
 	var btnAllRoadsOn = false;
 	var btnAllNodesOn = false;
 	var btnAllRoads = document.getElementById('all-roads');

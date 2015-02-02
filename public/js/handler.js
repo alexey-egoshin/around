@@ -9,6 +9,8 @@ var enemies = []; //массив объектов вражеских полко�
 var enemyCircle = []; //массив кругов вражеских полков
 var radius = 0.01; //радиус действия полка
 var restr_nodes = []; //массив кругов запрещенных узлов
+var readySpatialite = false //флаг готовности модуля spatialite
+var zoom = 13; //масштаб карты
 
 /**
 * установка начальной и конечной точек на карте
@@ -120,11 +122,7 @@ function clearAllNodes(){
 **/
 function setEnemy(lat,lng,radius){
 	
-	var k = 1;
-	for ( var a = 0; a < 6.28; a += 0.01){
-		enemyCircle.push(L.circle(L.latLng(lat+k*radius*Math.sin(a),lng+radius*Math.cos(a)),1,{color:'orange'}).addTo(map));
-	} 
-	
+	enemyCircle.push(L.circle([lat,lng], radius * 111300, {color: '#f03', fillColor: '#f03', opacity: 0.1,fillOpacity:0.1 }).addTo(map));
 }
 
 /**
@@ -163,6 +161,10 @@ function getRestrictedNodes(){
 * запрос маршрута у сервера и отображение маршрута на карте
 **/
 function showRoute(start,end, enemies){
+	if (!readySpatialite){
+		alert('Модуль spatialite не готов!');
+		return;
+	}
 	route_line.setLatLngs(dots2latlngs([]));
 	showElem(preloader);
 	Time.start();
@@ -190,3 +192,33 @@ function showElem(el){
 function hideElem(el){
 	el.style.display = 'none';
 }
+
+/**
+* инициализация модуля spatialite
+**/
+function initSpatialite(file){
+	readySpatialite = false;
+	showElem(preloader);
+	var params = 'file=' + file;
+	Ajax.sendRequest('GET','/init',params,function(result){
+		hideElem(preloader);
+		readySpatialite = true;
+		
+		var center = mapCenter[result.file];
+		map.setView(center, zoom);
+	});
+}
+
+/**
+* объект содержащий центры карты для разных регионов
+**/
+var mapCenter = 
+{
+	"RU-ME.sqlite": [56.605, 47.9],
+	"iraq-latest.osm.sqlite": [33.385586,44.373779],
+	"vietnam-latest.osm.sqlite": [21.0845,105.820313],
+	"syria-latest.osm.sqlite": [33.504759,36.496582],
+	"tajikistan-latest.osm.sqlite": [38.548165,68.774414],
+	"RU-LEN.osm.sqlite": [59.95501,30.311279],
+	"RU-MOS.osm.sqlite": [55.751077,37.621307]
+};

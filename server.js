@@ -6,10 +6,9 @@ var spatialite = require('./spatialite');
 var osrm = require('./osrm.route');
 var Helper = require('./helper');
 var time = require('./time');
-spatialite.init(function(){
-	console.log('spatialite ready...');});
-	server.listen(port,function(){
-		console.log('Server start at port '+port+ ' ' + Helper.getTime());
+
+server.listen(port,function(){
+	console.log('Server start at port '+port+ ' ' + Helper.getTime());
 });
 
 
@@ -19,6 +18,16 @@ app.use(express.static(__dirname+'/public'));
 app.get('/',function(req,res){
     console.log('/ was called');
 	res.sendFile(__dirname+'/index.html');
+});
+
+app.get('/init', function(req, res){
+	var db_file = req.query.file;
+	spatialite.init(db_file, function(file){
+		console.log('spatialite ready...');
+		res.writeHead(200, {"Content-Type": "text/html","Access-Control-Allow-Origin": "*"});
+		res.write(JSON.stringify({file:file}));
+		res.end();	
+	});
 });
 
 

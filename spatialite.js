@@ -1,7 +1,9 @@
+var DB_DIR = 'db';
 var sqlite = require('spatialite');
-var db = new sqlite.Database('RU-ME3.sqlite');
 var debug = require('./debug.js');
-
+var ready = false; /**флаг готовности**/
+var loaded_file = ''; /**загруженный файл**/
+var db = null;
 var roads = []; /**массив дорог**/
 var nodes = [];/**массив узлов**/
 var index_from = []; /**индексные таблицы для ускорения поиска**/
@@ -160,15 +162,40 @@ function getIncident(curr){
 * инициализация начальных значений переменных
 * @param функция обратного вызова
 **/
-function init(callback){
-	console.log('load graph...');
-	loadNodes(function(){
+function init(db_file, callback){
+	if ( db_file == loaded_file ){
+       callback(db_file);
+       return;
+	} 
+    
+    loaded_file = db_file;
+    clear();
+    console.log('load graph...');
+    db = new sqlite.Database(DB_DIR + '/' + db_file);
+    loadNodes(function(){
 		loadRoads(function(){
-			callback();
+			ready = true;
+            console.log('graph from database '+ db_file +' loaded: nodes: ' + n + '; roads: ' + m);
+            callback(db_file);
 		})
 	});
 }
 
+/**
+* очистка данных содержащих граф
+* @param callback функция обратного вызова
+**/
+function clear(){
+    console.log('unload graph...');
+    db = null;
+    roads= [];
+    nodes = [];
+    index_from = [];
+    index_size = [];
+    n = 0;
+    m = 0;
+    ready = false;
+}
 /**
 * определение маршрута запросом к базе
 * @param from начальная точка
@@ -845,6 +872,7 @@ function routeWaveEnemy(from, to, enemy, callback){
 /**
 * поиск маршрута до любой из заданных баз с обходом полков неприятеля
 * волновым алгоритмом 
+* @param index номер попытки
 * @param from начальная точка вида {lat:lat, lng:lng, radius:radius}
 * @param to  конечная точка (база) вида {lat:lat, lng:lng, radius:radius}
 * @param enemy массив полков неприятеля вида [{lat:lat, lng:lng, radius:radius}, ...]
@@ -1060,7 +1088,7 @@ function getRestirctedNodes(enemy, callback){
 	var restricted = [];
 	for ( var i = 0; i < enemy.length; i++ ){
 		for ( var j = 0; j < n; j++ ){
-			if ( distance([enemy[i].lat,enemy[i].lng],nodes[j]) <= enemy[i].radius * enemy[i].radius ){
+			if ( rastGrad2([enemy[i].lat,enemy[i].lng],nodes[j]) <= enemy[i].radius ){
 				restricted.push([nodes[j].lat,nodes[j].lng]);
 			}
 		}
@@ -1075,7 +1103,7 @@ function getBannedNodesId(enemy){
 	var restricted = [];
 	for ( var i = 0; i < enemy.length; i++ ){
 		for ( var j = 0; j < n; j++ ){
-			if ( distance([enemy[i].lat,enemy[i].lng],nodes[j]) <= enemy[i].radius * enemy[i].radius ){
+			if ( rastGrad2([enemy[i].lat,enemy[i].lng],nodes[j]) <= enemy[i].radius ){
 				restricted.push(j+1);
 			}
 		}
@@ -1091,8 +1119,8 @@ function getBannedNodesId2(from, enemy){
 	var condition = false;
     for ( var i = 0; i < enemy.length; i++ ){
 		for ( var j = 0; j < n; j++ ){
-			condition = distance([enemy[i].lat,enemy[i].lng],nodes[j]) <= enemy[i].radius * enemy[i].radius &&
-                        distance([from.lat,from.lng],nodes[j]) >= from.radius * from.radius;
+			condition = rastGrad2([enemy[i].lat,enemy[i].lng],nodes[j]) <= enemy[i].radius &&
+                        rastGrad2([from.lat,from.lng],nodes[j]) >= from.radius;
             if ( condition ){
 				restricted.push(j+1);
 			}
@@ -1117,19 +1145,12 @@ function getTargetsNodesId(to){
 **/
 function getTargetsNodesId2(to){
 	var targets = [];
-	var node_id = 1;
-	var minDist = distance([to.lat,to.lng], nodes[0]);
 	for ( var i = 0; i < n; i++ ){
-		if ( distance([to.lat,to.lng],nodes[i]) <= to.radius * to.radius ){
-			targets.push(latlng2node_id([nodes[i].lat, nodes[i].lng]));
-		}
-		var currDist = distance([to.lat,to.lng], nodes[i]);
-		if ( currDist < minDist ){
-			node_id = nodes[i].node_id;
-			minDist = currDist;
+		var rast = rastGrad2([to.lat,to.lng],nodes[i]);
+		if (  rast <= to.radius ){
+			targets.push(nodes[i].node_id);
 		}
 	}
-	targets.push(node_id);
 	return targets;
 }
 
@@ -1144,6 +1165,58 @@ function randomMoveDot(dot){
 	newDot.lat = dot.lat + radius * (2 * Math.random() - 1);
 	newDot.lng = dot.lng + radius * (2 * Math.random() - 1);
 	return newDot;
+}
+
+/**
+* вычисление расстояния на сфере  в градусах
+* @param do1,dot2 точки, заданные массивами кооординат [lat,lng]
+**/
+function rastGrad(dot1,dot2){
+
+	/**координаты двух точек**/
+	var llat1 = dot1[0];
+	var llong1 = dot1[1];
+
+	var llat2 = dot2[0];
+	var llong2 = dot2[1];
+
+	/**в радианах**/
+	var lat1 = llat1*Math.PI/180;
+	var lat2 = llat2*Math.PI/180;
+	var long1 = llong1*Math.PI/180;
+	var long2 = llong2*Math.PI/180;
+
+	/**косинусы и синусы широт и разницы долгот**/
+	var cl1 = Math.cos(lat1)
+	var cl2 = Math.cos(lat2)
+	var sl1 = Math.sin(lat1)
+	var sl2 = Math.sin(lat2)
+	var delta = long2 - long1
+	var cdelta = Math.cos(delta)
+	var sdelta = Math.sin(delta)
+
+	/**вычисления длины большого круга**/
+	var y = Math.sqrt(Math.pow(cl2*sdelta,2)+Math.pow(cl1*sl2-sl1*cl2*cdelta,2))
+	var x = sl1*sl2+cl1*cl2*cdelta
+	var ad = Math.atan2(y,x)
+	var dist = ad*180/Math.PI;
+	return dist;
+}
+
+/**
+* вычисление расстояния на сфере  в градусах
+* @param dot точкf, заданная массивом кооординат [lat,lng]
+* @param node узел графа, заданный как объект вида {node_id:node_id,lat:lat,lng:lng }
+**/
+function rastGrad2(dot, node){
+    return rastGrad(dot, [node.lat, node.lng]);
+}
+
+/**
+* возвращаем флаг готовности
+**/
+function getReady(){
+	return ready;
 }
 
 exports.init = init;
@@ -1165,3 +1238,4 @@ exports.bypassingWideEnemy = bypassingWideEnemy;
 exports.routeWave = routeWave;
 exports.routeWaveEnemy = routeWaveEnemy;
 exports.findRouteToBase = findRouteToBase;
+exports.getReady = getReady;
