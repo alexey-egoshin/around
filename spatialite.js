@@ -1220,6 +1220,59 @@ function getReady(){
 	return ready;
 }
 
+/**
+* нахождение связанных узлов графа
+* @param from начальная точка
+* @param callback функция обратного вызова в которую передается результат в виде
+* массива id узлов [id1, id2,...]]
+**/
+function findConnectedNodes(from, callback){
+	var waveLabel = []; /**волновая метка**/
+	var T = 0;/**время**/
+	var connectedNodes = [];
+	var oldFront = [];/**старый фронт**/
+	var newFront = [];/**новый фронт**/
+	var curr = null;
+	var id = null;
+	for ( var i = 0; i < n; i++ ){
+		waveLabel[i] = -1;
+	}
+	var start = latlng2node_id(from);
+   
+	console.log('findConnectedNodes: start='+start);
+	waveLabel[start-1] = 0;
+	oldFront.push(start);
+	connectedNodes.push(start);
+	while (true){
+		//console.log(JSON.stringify(oldFront));
+		for ( var i = 0; i < oldFront.length; i++ ){
+			curr = oldFront[i];
+			//console.log('curr='+curr);
+			for ( j = index_from[curr-1]; j < index_from[curr-1] + index_size[curr-1]; j++ ){
+				id = roads[j].node_to;
+				//console.log('id='+id);
+				//console.log('waveLabel[id]='+waveLabel[id-1] );
+				if ( waveLabel[id-1] == -1 ){
+					waveLabel[id-1] = T + 1;
+					newFront.push(id);
+					connectedNodes.push(id);
+					//console.log('routeWaveEnemy: id='+id);
+				}
+				
+			}
+		}
+		if ( newFront.length == 0 ){
+			/*распостранение волны закончено*/
+			console.log('Found connected nodes: '+connectedNodes.length);
+			callback({nodes:connectedNodes, length: connectedNodes.length});
+			return;
+		}
+		oldFront = newFront;
+		newFront = [];
+		T++;
+	}
+}
+
 exports.init = init;
 exports.query = query;
 exports.loadNodes = loadNodes;
@@ -1240,3 +1293,4 @@ exports.routeWave = routeWave;
 exports.routeWaveEnemy = routeWaveEnemy;
 exports.findRouteToBase = findRouteToBase;
 exports.getReady = getReady;
+exports.findConnectedNodes = findConnectedNodes;

@@ -118,3 +118,16 @@ hr
 {
 	clear: both;
 }
+
+.task input
+{
+	width: 20px;
+	height: 20px;
+}
+
+.task label
+{
+	color: #eee;
+	font-family: Verdana;
+	font-size: 1.5em;
+}

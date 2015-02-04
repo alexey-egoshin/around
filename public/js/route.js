@@ -249,6 +249,22 @@ var Route =
 			//console.log(JSON.stringify(route));
             callback(route);
 		});
+	},
+	
+	/**
+    * получение маршрута от модуля Spatialite метод routeDijkstra3
+    * @param start, end точки начала и конца пути, представленные как массивы [lat,lng]
+    * @param callback функция обратного вызова в которую передается маршрут и объект полка
+    **/
+    
+    findConnected: function(start, callback){
+		var start = [start.lat, start.lng];
+		var params = 'data=' + JSON.stringify([start]);
+		console.log(params);
+		Ajax.sendRequest('GET', '/findconnected', params, function(result) {
+			//console.log(JSON.stringify(result));
+            callback(result);
+		});
 	}
     
 }

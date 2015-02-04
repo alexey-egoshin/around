@@ -217,3 +217,14 @@ app.get('/restricted',function(req,res){
      
 })
 
+/*маршрут для GET запроса запрещенных узлов от spatialite*/
+app.get('/findconnected',function(req,res){
+	var data = JSON.parse(req.query.data);
+	var start = data[0];
+	spatialite.findConnectedNodes(start, function(result){
+		res.writeHead(200, {"Content-Type": "text/html","Access-Control-Allow-Origin": "*"});
+		res.write(JSON.stringify(result));
+		res.end();
+	});
+     
+})

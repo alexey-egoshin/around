@@ -53,7 +53,10 @@
 		<button class="rad" id="get-restr">Rest. nodes</button>
 		<div id="preloader"><img src="/img/load.gif"/></div>
 		<label class="time-label">Time: </label><span class="time-label" id="time"></span>
-		
+		<div class="task" >
+			<input type="radio" name="task" value="route" checked/><label>Маршрутизация</label><br/>
+			<input type="radio" name="task" value="connected"/><label>Проверка связности</label>
+		</div>
 		<script type="text/javascript" src="/js/map.js"></script>
 		<script type="text/javascript" src="/js/handler.js"></script>
     </body>
