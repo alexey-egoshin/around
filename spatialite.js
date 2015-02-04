@@ -6,6 +6,7 @@ var loaded_file = ''; /**загруженный файл**/
 var db = null;
 var roads = []; /**массив дорог**/
 var nodes = [];/**массив узлов**/
+var connectedNodes = []; /**массив id связных узлов**/
 var index_from = []; /**индексные таблицы для ускорения поиска**/
 var index_size = []; 
 var n = 0; /**количество вершин графа**/
@@ -1229,7 +1230,7 @@ function getReady(){
 function findConnectedNodes(from, callback){
 	var waveLabel = []; /**волновая метка**/
 	var T = 0;/**время**/
-	var connectedNodes = [];
+	connectedNodes = [];
 	var oldFront = [];/**старый фронт**/
 	var newFront = [];/**новый фронт**/
 	var curr = null;
@@ -1264,13 +1265,58 @@ function findConnectedNodes(from, callback){
 		if ( newFront.length == 0 ){
 			/*распостранение волны закончено*/
 			console.log('Found connected nodes: '+connectedNodes.length);
-			callback({nodes:connectedNodes, length: connectedNodes.length});
+			callback();
 			return;
 		}
 		oldFront = newFront;
 		newFront = [];
 		T++;
 	}
+}
+
+/**
+* получение массива несвязных узлов 
+* @return массив узлов, не связанных с основной частью графа вида [{id:id,lat:lat,lng:lng},...]
+**/
+function getNotConnectedNodes(){
+	var notConnectedNodes = [];
+	for ( var i = 0; i < n; i++ ){
+		if ( connectedNodes.indexOf(nodes[i].node_id) == -1 ){
+			notConnectedNodes.push({id:nodes[i].node_id, lat:nodes[i].lat, lng:nodes[i].lng});
+		}
+	}
+	return notConnectedNodes;
+}
+
+/**
+* получение массива несвязных узлов в виде массива координат
+* @return массив узлов, не связанных с основной частью графа вида [[lat1,lng1],[lat2,lng2],...]
+**/
+function getNotConnectedDots(){
+	var notConnectedDots = [];
+	for ( var i = 0; i < n; i++ ){
+		if ( connectedNodes.indexOf(nodes[i].node_id) == -1 ){
+			notConnectedDots.push([nodes[i].lat, nodes[i].lng]);
+		}
+	}
+	return notConnectedDots;
+}
+
+/**
+* получение массива несвязных путей в виде массива координат
+* @callback функция обратного вызова в которую передается
+* массив узлов, не связанных с основной частью графа вида [[[lat1,lng1],[lat2,lng2]],...]
+**/
+function getNotConnectedRoads(callback){
+	var notConnectedRoads = [];
+	var geom = null;
+	for ( var i = 0; i < m; i++ ){
+		if ( connectedNodes.indexOf(roads[i].node_from) == -1 || connectedNodes.indexOf(roads[i].node_to) == -1 ){
+			geom = JSON.parse(roads[i].geometry);
+			notConnectedRoads.push(geom.coordinates);
+		}
+	}
+	callback(reverse2(notConnectedRoads));
 }
 
 exports.init = init;
@@ -1294,3 +1340,4 @@ exports.routeWaveEnemy = routeWaveEnemy;
 exports.findRouteToBase = findRouteToBase;
 exports.getReady = getReady;
 exports.findConnectedNodes = findConnectedNodes;
+exports.getNotConnectedRoads = getNotConnectedRoads;

@@ -257,11 +257,11 @@ var Route =
     * @param callback функция обратного вызова в которую передается маршрут и объект полка
     **/
     
-    findConnected: function(start, callback){
+    getNotConnectedRoads: function(start, callback){
 		var start = [start.lat, start.lng];
 		var params = 'data=' + JSON.stringify([start]);
 		console.log(params);
-		Ajax.sendRequest('GET', '/findconnected', params, function(result) {
+		Ajax.sendRequest('GET', '/findnotconnected', params, function(result) {
 			//console.log(JSON.stringify(result));
             callback(result);
 		});

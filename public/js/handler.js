@@ -55,11 +55,13 @@ map.on('click',function(e){
 		if ( endPoint != null ) map.removeLayer(endPoint);
 		start = {lat:e.latlng.lat, lng:e.latlng.lng, radius:radius};
 		startPoint = L.marker(L.latLng(start.lat,start.lng), {draggable:true}).addTo(map);
-		findConnected(start);
+		clearAllNodes();
+		clearAllRoads();
+		showNotConnected(start);
 		startPoint.on('dragend',function(e){
 			start.lat = startPoint.getLatLng().lat;
 			start.lng = startPoint.getLatLng().lng;
-			findConnected(start);
+			showNotConnected(start);
 		});
 	}		
 });
@@ -255,22 +257,26 @@ function getRadio(){
 
 /**
 * проверка связности графа волновым методом
+* вывод несвязной части графа путей
 * @param start начальная точка распостранения волны {lat:lat, lng:lng, radius:radius}
 **/
-function findConnected(start){
+function showNotConnected(start){
 	if (!readySpatialite){
 		alert('Модуль spatialite не готов!');
 		return;
 	}
 	showElem(preloader);
 	Time.start();
-	Route.findConnected(start, function(result){
+	Route.getNotConnectedRoads(start, function(result){
 		hideElem(preloader);
 		time.textContent = Time.stop() + ' мс';
 		time.innerText = Time.stop() + ' мс';
-		console.log(JSON.stringify(result));
+		//console.log(JSON.stringify(result));
 		if ( result == null ){
 			alert('Result fail');
-		} 
+		}
+		for ( var i = 0; i < result.length; i++ ){
+			roads.push(L.polyline(dots2latlngs(result[i]),{color:'green'}).addTo(map));
+		}
 	})
 }
