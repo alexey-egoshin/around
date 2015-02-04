@@ -821,7 +821,7 @@ function routeWaveEnemy(from, to, enemy, callback){
 	}
 	var start = latlng2node_id(from);
     var end = latlng2node_id(to);
-	console.log(start+':'+end);
+	console.log('routeWaveEnemy:'+start+':'+end);
 	waveLabel[start-1] = 0;
 	oldFront.push(start);
 	var banned = getBannedNodesId(enemy);
@@ -838,6 +838,7 @@ function routeWaveEnemy(from, to, enemy, callback){
 				if ( waveLabel[id-1] == -1 ){
 					waveLabel[id-1] = T + 1;
 					newFront.push(id);
+					console.log('routeWaveEnemy: id='+id);
 					prev[id-1] = curr;
 				}
 				
@@ -902,7 +903,7 @@ function findRouteToBase(index, from, to, enemy, callback){
 	} 
 	
 	var targets = getTargetsNodesId2(to);
-	console.log(JSON.stringify(start)+':'+JSON.stringify(targets));
+	console.log('findRouteToBase:'+JSON.stringify(start)+':'+JSON.stringify(targets));
 	waveLabel[start-1] = 0;
 	oldFront.push(start);
 	var banned = getBannedNodesId2(from, enemy);

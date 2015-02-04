@@ -214,7 +214,7 @@ function initSpatialite(file){
 **/
 var mapCenter = 
 {
-	"RU-ME.sqlite": [56.605, 47.9],
+	"RU-ME.osm.sqlite": [56.605, 47.9],
 	"iraq-latest.osm.sqlite": [33.385586,44.373779],
 	"vietnam-latest.osm.sqlite": [21.0845,105.820313],
 	"syria-latest.osm.sqlite": [33.504759,36.496582],
