@@ -1254,6 +1254,7 @@ function fillConnectedNodes(index, callback){
 	waveLabel[start-1] = 0;
 	oldFront.push(start);
 	connectedNodes.push(start);
+	nodes[start-1].connected = true;
 	while (true){
 		//console.log(JSON.stringify(oldFront));
 		for ( var i = 0; i < oldFront.length; i++ ){
@@ -1280,7 +1281,7 @@ function fillConnectedNodes(index, callback){
 				callback();
 				return;
 			}else{
-				findConnectedNodes2(index+1, callback)
+				fillConnectedNodes(index+1, callback)
 				return;
 			}
 		}
