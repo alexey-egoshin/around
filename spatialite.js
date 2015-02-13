@@ -7,7 +7,6 @@ var db = null;
 var roads = []; /**массив дорог**/
 var nodes = [];/**массив узлов**/
 var connectedNodes = []; /**массив id связных узлов**/
-var notConnectedNodes = []; /**массив id несвязных узлов**/
 var index_from = []; /**индексные таблицы для ускорения поиска**/
 var index_size = []; 
 var n = 0; /**количество вершин графа**/
@@ -55,10 +54,13 @@ function loadRoads(callback){
 	
 	
 	db.spatialite(function(err) {
+		if (err) console.log(err);
 		db.all(sql, function(err, rows) {
+			if (err) console.log(err);
 			if ( rows != undefined ){
 				if ( rows != null ){
 					//записываем в массив
+					console.log('loadRoads: rows.length='+rows.length);
 					var geom = null;
 					for ( var i = 0; i < rows.length; i++ ){
 						roads.push(rows[i]);
@@ -67,6 +69,7 @@ function loadRoads(callback){
 						roads.push({node_from:rows[i].node_to, node_to:rows[i].node_from,cost:rows[i].cost,length:rows[i].length,geometry:JSON.stringify(geom)});
 					}
 					m = roads.length;
+					console.log('loadRoads: m='+m);
 					//сортируем
 					roads.sort(function(x,y){ return x.node_from-y.node_from});
 					
@@ -177,14 +180,14 @@ function init(db_file, callback){
     console.log('load graph...');
     db = new sqlite.Database(DB_DIR + '/' + db_file);
     loadNodes(function(){
+		console.log('loadNodesCallback: n='+n);
 		loadRoads(function(){
+			console.log('loadRoadsCallback: m='+m);
 			fillConnectedNodes(0, function(){
-				fillNotConnectedNodes(function(){
-					ready = true;
-					console.log('graph from database '+ db_file +' loaded: nodes: ' + n + '; roads: ' + m);
-					callback(db_file);
-				});
-				
+				console.log('In callback fillConnectedNodes');
+				ready = true;
+				console.log('graph from database '+ db_file +' loaded: nodes: ' + n + '; roads: ' + m);
+				callback(db_file);
 			});
 			
 		})
@@ -1239,6 +1242,7 @@ function getReady(){
 * массива id узлов [id1, id2,...]]
 **/
 function fillConnectedNodes(index, callback){
+	console.log('IN fillconnectedNodes');
 	var waveLabel = []; /**волновая метка**/
 	var T = 0;/**время**/
 	connectedNodes = [];
@@ -1250,7 +1254,7 @@ function fillConnectedNodes(index, callback){
 		waveLabel[i] = -1;
 	}
 	var start = Math.floor(n/2+index);
-	console.log('findConnectedNodes2: start='+start);
+	console.log('findConnectedNodes: start='+start);
 	waveLabel[start-1] = 0;
 	oldFront.push(start);
 	connectedNodes.push(start);
@@ -1303,20 +1307,6 @@ function getNotConnectedNodes(){
 	return lostNodes;
 }
 
-/**
-* заполнение массива id несвязных узлов 
-* @param callabck функция обратного вызова по завершении операции
-* @return массив узлов, не связанных с основной частью графа вида [{id:id,lat:lat,lng:lng},...]
-**/
-function fillNotConnectedNodes(callback){
-	notConnectedNodes = [];
-	for ( var i = 0; i < n; i++ ){
-		if ( connectedNodes.indexOf(nodes[i].node_id) == -1 ){
-			notConnectedNodes.push(nodes[i].node_id);
-		}
-	}
-	callback();
-}
 
 /**
 * получение массива несвязных узлов в виде массива координат
@@ -1341,7 +1331,7 @@ function getNotConnectedRoads(callback){
 	var notConnectedRoads = [];
 	var geom = null;
 	for ( var i = 0; i < m; i++ ){
-		if ( notConnectedNodes.indexOf(roads[i].node_from) != -1 || notConnectedNodes.indexOf(roads[i].node_to) != -1 ){
+		if ( nodes[roads[i].node_from - 1].connected == false || nodes[roads[i].node_to - 1].connected == false ){
 			geom = JSON.parse(roads[i].geometry);
 			notConnectedRoads.push(geom.coordinates);
 		}

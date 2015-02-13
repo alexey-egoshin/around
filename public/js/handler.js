@@ -187,10 +187,11 @@ function showRoute(start,end, enemies){
 	showElem(preloader);
 	Time.start();
 	Route.getRoute(start,end,enemies,function(route){
-		hideElem(preloader);
-		time.textContent = Time.stop() + ' мс';
-		time.innerText = Time.stop() + ' мс';
+		var timeStop = Time.stop();
+		time.textContent = timeStop + ' мс';
+		time.innerText = timeStop + ' мс';
 		console.log(JSON.stringify(route));
+		hideElem(preloader);
 		if ( route.length == 0 ){
 			alert('Route not found');
 		} 
@@ -221,7 +222,7 @@ function initSpatialite(file){
 	Ajax.sendRequest('GET','/init',params,function(result){
 		hideElem(preloader);
 		readySpatialite = true;
-		
+		console.log(JSON.stringify(result));
 		var center = mapCenter[result.file];
 		map.setView(center, zoom);
 	});
@@ -238,7 +239,12 @@ var mapCenter =
 	"syria-latest.osm.sqlite": [33.504759,36.496582],
 	"tajikistan-latest.osm.sqlite": [38.548165,68.774414],
 	"RU-LEN.osm.sqlite": [59.95501,30.311279],
-	"RU-MOS.osm.sqlite": [55.751077,37.621307]
+	"RU-MOS.osm.sqlite": [55.751077,37.621307],
+	"israel-and-palestine-latest.osm.sqlite": [31.984255, 35.004911],
+	"kosovo-latest.osm.sqlite": [42.614833, 20.893836],
+	"mongolia-latest.osm.sqlite": [47.773702, 106.427558],
+	"pakistan-latest.osm.sqlite": [30.183729, 71.509366],
+	"ukraine-latest.osm.sqlite": [50.350146, 30.633554]
 };
 
 /**
