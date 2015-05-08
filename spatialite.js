@@ -1,27 +1,27 @@
 var DB_DIR = 'db';
 var sqlite = require('spatialite');
 var debug = require('./debug.js');
-var ready = false; /**флаг готовности**/
-var loaded_file = ''; /**загруженный файл**/
+var ready = false; /**С„Р»Р°Рі РіРѕС‚РѕРІРЅРѕСЃС‚Рё**/
+var loaded_file = ''; /**Р·Р°РіСЂСѓР¶РµРЅРЅС‹Р№ С„Р°Р№Р»**/
 var db = null;
-var roads = []; /**массив дорог**/
-var nodes = [];/**массив узлов**/
-var connectedNodes = []; /**массив id связных узлов**/
-var index_from = []; /**индексные таблицы для ускорения поиска**/
+var roads = []; /**РјР°СЃСЃРёРІ РґРѕСЂРѕРі**/
+var nodes = [];/**РјР°СЃСЃРёРІ СѓР·Р»РѕРІ**/
+var connectedNodes = []; /**РјР°СЃСЃРёРІ id СЃРІСЏР·РЅС‹С… СѓР·Р»РѕРІ**/
+var index_from = []; /**РёРЅРґРµРєСЃРЅС‹Рµ С‚Р°Р±Р»РёС†С‹ РґР»СЏ СѓСЃРєРѕСЂРµРЅРёСЏ РїРѕРёСЃРєР°**/
 var index_size = []; 
-var n = 0; /**количество вершин графа**/
-var m = 0; /**количество дуг графа**/
-var INF = 999999999; /**большое число**/
-var margin = 0.6; /**коэффициент расширения для определения части графа для обсчета**/
-var margin2 = 2.0;/**коэффициент расширения для определения части графа для обсчета**/
-var CONNECTED_COFF = 0.95; /**часть связных узлов**/
+var n = 0; /**РєРѕР»РёС‡РµСЃС‚РІРѕ РІРµСЂС€РёРЅ РіСЂР°С„Р°**/
+var m = 0; /**РєРѕР»РёС‡РµСЃС‚РІРѕ РґСѓРі РіСЂР°С„Р°**/
+var INF = 999999999; /**Р±РѕР»СЊС€РѕРµ С‡РёСЃР»Рѕ**/
+var margin = 0.6; /**РєРѕСЌС„С„РёС†РёРµРЅС‚ СЂР°СЃС€РёСЂРµРЅРёСЏ РґР»СЏ РѕРїСЂРµРґРµР»РµРЅРёСЏ С‡Р°СЃС‚Рё РіСЂР°С„Р° РґР»СЏ РѕР±СЃС‡РµС‚Р°**/
+var margin2 = 2.0;/**РєРѕСЌС„С„РёС†РёРµРЅС‚ СЂР°СЃС€РёСЂРµРЅРёСЏ РґР»СЏ РѕРїСЂРµРґРµР»РµРЅРёСЏ С‡Р°СЃС‚Рё РіСЂР°С„Р° РґР»СЏ РѕР±СЃС‡РµС‚Р°**/
+var CONNECTED_COFF = 0.95; /**С‡Р°СЃС‚СЊ СЃРІСЏР·РЅС‹С… СѓР·Р»РѕРІ**/
 
 
 /**
-* выполнение запроса и получение результатов в виде массива объектов
-* @param sql строка запроса
-* @param callback функция обратного вызова в которую передается результат
-* в виде массива объектов
+* РІС‹РїРѕР»РЅРµРЅРёРµ Р·Р°РїСЂРѕСЃР° Рё РїРѕР»СѓС‡РµРЅРёРµ СЂРµР·СѓР»СЊС‚Р°С‚РѕРІ РІ РІРёРґРµ РјР°СЃСЃРёРІР° РѕР±СЉРµРєС‚РѕРІ
+* @param sql СЃС‚СЂРѕРєР° Р·Р°РїСЂРѕСЃР°
+* @param callback С„СѓРЅРєС†РёСЏ РѕР±СЂР°С‚РЅРѕРіРѕ РІС‹Р·РѕРІР° РІ РєРѕС‚РѕСЂСѓСЋ РїРµСЂРµРґР°РµС‚СЃСЏ СЂРµР·СѓР»СЊС‚Р°С‚
+* РІ РІРёРґРµ РјР°СЃСЃРёРІР° РѕР±СЉРµРєС‚РѕРІ
 **/
 function query(sql, callback){
 	db.spatialite(function(err) {
@@ -41,9 +41,9 @@ function query(sql, callback){
 
 
 /**
-* получение дорог из базы в виде массива объектов и запись в массив roads + заполнение индексных массивов
-* @param callback функция обратного вызова
-* roads - массив объектов вида {node_from:node_from,node_to:node_to,name:name,cost:cost,length:length,lat_from:lat_from,lng_from:lng_from,lat_to:lat_to,lng_to:lng_to}
+* РїРѕР»СѓС‡РµРЅРёРµ РґРѕСЂРѕРі РёР· Р±Р°Р·С‹ РІ РІРёРґРµ РјР°СЃСЃРёРІР° РѕР±СЉРµРєС‚РѕРІ Рё Р·Р°РїРёСЃСЊ РІ РјР°СЃСЃРёРІ roads + Р·Р°РїРѕР»РЅРµРЅРёРµ РёРЅРґРµРєСЃРЅС‹С… РјР°СЃСЃРёРІРѕРІ
+* @param callback С„СѓРЅРєС†РёСЏ РѕР±СЂР°С‚РЅРѕРіРѕ РІС‹Р·РѕРІР°
+* roads - РјР°СЃСЃРёРІ РѕР±СЉРµРєС‚РѕРІ РІРёРґР° {node_from:node_from,node_to:node_to,name:name,cost:cost,length:length,lat_from:lat_from,lng_from:lng_from,lat_to:lat_to,lng_to:lng_to}
 **/
 function loadRoads(callback){
 	var sql = "SELECT node_from, node_to, name, cost, length, Y(rn.geometry) "; 
@@ -59,7 +59,7 @@ function loadRoads(callback){
 			if (err) console.log(err);
 			if ( rows != undefined ){
 				if ( rows != null ){
-					//записываем в массив
+					//Р·Р°РїРёСЃС‹РІР°РµРј РІ РјР°СЃСЃРёРІ
 					console.log('loadRoads: rows.length='+rows.length);
 					var geom = null;
 					for ( var i = 0; i < rows.length; i++ ){
@@ -70,14 +70,14 @@ function loadRoads(callback){
 					}
 					m = roads.length;
 					console.log('loadRoads: m='+m);
-					//сортируем
+					//СЃРѕСЂС‚РёСЂСѓРµРј
 					roads.sort(function(x,y){ return x.node_from-y.node_from});
 					
 					var curr_from = 0;
 					var prev_from = 0;
 					for ( var i = 0; i < m; prev_from = curr_from,i++ ){
 						curr_from = roads[i].node_from;
-						if ( curr_from != prev_from ){ //если from новый записываем его начальный индекс в index_from
+						if ( curr_from != prev_from ){ //РµСЃР»Рё from РЅРѕРІС‹Р№ Р·Р°РїРёСЃС‹РІР°РµРј РµРіРѕ РЅР°С‡Р°Р»СЊРЅС‹Р№ РёРЅРґРµРєСЃ РІ index_from
 							if ( curr_from - 1 > index_from.length ){
 								for ( var j = 0; j < (curr_from - 1 - index_from.length); j++ ){
 									index_from.push(-1);
@@ -86,7 +86,7 @@ function loadRoads(callback){
 							}
 							index_from.push(i);
 							index_size.push(1);
-						}else{ //если from старый увеличиваем последний index_size
+						}else{ //РµСЃР»Рё from СЃС‚Р°СЂС‹Р№ СѓРІРµР»РёС‡РёРІР°РµРј РїРѕСЃР»РµРґРЅРёР№ index_size
 							index_size[index_size.length-1]++;
 						}
 					}			
@@ -98,9 +98,9 @@ function loadRoads(callback){
 }
 
 /**
-* получение узлов графа из базы в виде массива объектов и запись в массив nodes
-* @param callback функция обратного вызова
-* nodes - массив объектов вида {node_id:node_id,cardinality:cardinality,lat:lat,lng:lng}
+* РїРѕР»СѓС‡РµРЅРёРµ СѓР·Р»РѕРІ РіСЂР°С„Р° РёР· Р±Р°Р·С‹ РІ РІРёРґРµ РјР°СЃСЃРёРІР° РѕР±СЉРµРєС‚РѕРІ Рё Р·Р°РїРёСЃСЊ РІ РјР°СЃСЃРёРІ nodes
+* @param callback С„СѓРЅРєС†РёСЏ РѕР±СЂР°С‚РЅРѕРіРѕ РІС‹Р·РѕРІР°
+* nodes - РјР°СЃСЃРёРІ РѕР±СЉРµРєС‚РѕРІ РІРёРґР° {node_id:node_id,cardinality:cardinality,lat:lat,lng:lng}
 **/
 function loadNodes(callback){
 	var sql = "SELECT node_id, cardinality, Y(geometry) AS lat, X(geometry) AS lng FROM roads_nodes"; 
@@ -121,7 +121,7 @@ function loadNodes(callback){
 }
 
 /**
-* получение стоимости дуги графа из узла from в узел to
+* РїРѕР»СѓС‡РµРЅРёРµ СЃС‚РѕРёРјРѕСЃС‚Рё РґСѓРіРё РіСЂР°С„Р° РёР· СѓР·Р»Р° from РІ СѓР·РµР» to
 **/
 function getCost(from,to,banned){
 	if (from == to ) return 0;
@@ -138,7 +138,7 @@ function getCost(from,to,banned){
 }
 
 /**
-* получение геометрии ( как массива точек ) дуги графа из узла from в узел to
+* РїРѕР»СѓС‡РµРЅРёРµ РіРµРѕРјРµС‚СЂРёРё ( РєР°Рє РјР°СЃСЃРёРІР° С‚РѕС‡РµРє ) РґСѓРіРё РіСЂР°С„Р° РёР· СѓР·Р»Р° from РІ СѓР·РµР» to
 **/
 function getCoordinates(from,to){
 	var geom = null;
@@ -154,7 +154,7 @@ function getCoordinates(from,to){
 }
 
 /**
-* получение id узлов инцидентных данному
+* РїРѕР»СѓС‡РµРЅРёРµ id СѓР·Р»РѕРІ РёРЅС†РёРґРµРЅС‚РЅС‹С… РґР°РЅРЅРѕРјСѓ
 **/
 function getIncident(curr){
 	var incident = [];
@@ -166,9 +166,9 @@ function getIncident(curr){
 }
 
 /**
-* загрузка данных из базы
-* инициализация начальных значений переменных
-* @param функция обратного вызова
+* Р·Р°РіСЂСѓР·РєР° РґР°РЅРЅС‹С… РёР· Р±Р°Р·С‹
+* РёРЅРёС†РёР°Р»РёР·Р°С†РёСЏ РЅР°С‡Р°Р»СЊРЅС‹С… Р·РЅР°С‡РµРЅРёР№ РїРµСЂРµРјРµРЅРЅС‹С…
+* @param С„СѓРЅРєС†РёСЏ РѕР±СЂР°С‚РЅРѕРіРѕ РІС‹Р·РѕРІР°
 **/
 function init(db_file, callback){
 	if ( db_file == loaded_file ){
@@ -195,8 +195,8 @@ function init(db_file, callback){
 }
 
 /**
-* очистка данных содержащих граф
-* @param callback функция обратного вызова
+* РѕС‡РёСЃС‚РєР° РґР°РЅРЅС‹С… СЃРѕРґРµСЂР¶Р°С‰РёС… РіСЂР°С„
+* @param callback С„СѓРЅРєС†РёСЏ РѕР±СЂР°С‚РЅРѕРіРѕ РІС‹Р·РѕРІР°
 **/
 function clear(){
     console.log('unload graph...');
@@ -210,11 +210,11 @@ function clear(){
     ready = false;
 }
 /**
-* определение маршрута запросом к базе
-* @param from начальная точка
-* @param to конечная точка
-* @param callback функция обратного вызова в которую передается результат в виде
-* массива точек [[lat1, lng1], [lat2,lng2],...]]
+* РѕРїСЂРµРґРµР»РµРЅРёРµ РјР°СЂС€СЂСѓС‚Р° Р·Р°РїСЂРѕСЃРѕРј Рє Р±Р°Р·Рµ
+* @param from РЅР°С‡Р°Р»СЊРЅР°СЏ С‚РѕС‡РєР°
+* @param to РєРѕРЅРµС‡РЅР°СЏ С‚РѕС‡РєР°
+* @param callback С„СѓРЅРєС†РёСЏ РѕР±СЂР°С‚РЅРѕРіРѕ РІС‹Р·РѕРІР° РІ РєРѕС‚РѕСЂСѓСЋ РїРµСЂРµРґР°РµС‚СЃСЏ СЂРµР·СѓР»СЊС‚Р°С‚ РІ РІРёРґРµ
+* РјР°СЃСЃРёРІР° С‚РѕС‡РµРє [[lat1, lng1], [lat2,lng2],...]]
 **/
 
 function routeQuery(from, to, callback){
@@ -242,17 +242,17 @@ function routeQuery(from, to, callback){
 }
 
 /**
-* определение маршрута по алгоритму Дейкстры
-* @param from начальная точка
-* @param to конечная точка
-* @param callback функция обратного вызова в которую передается результат в виде
-* массива точек [[lat1, lng1], [lat2,lng2],...]]
+* РѕРїСЂРµРґРµР»РµРЅРёРµ РјР°СЂС€СЂСѓС‚Р° РїРѕ Р°Р»РіРѕСЂРёС‚РјСѓ Р”РµР№РєСЃС‚СЂС‹
+* @param from РЅР°С‡Р°Р»СЊРЅР°СЏ С‚РѕС‡РєР°
+* @param to РєРѕРЅРµС‡РЅР°СЏ С‚РѕС‡РєР°
+* @param callback С„СѓРЅРєС†РёСЏ РѕР±СЂР°С‚РЅРѕРіРѕ РІС‹Р·РѕРІР° РІ РєРѕС‚РѕСЂСѓСЋ РїРµСЂРµРґР°РµС‚СЃСЏ СЂРµР·СѓР»СЊС‚Р°С‚ РІ РІРёРґРµ
+* РјР°СЃСЃРёРІР° С‚РѕС‡РµРє [[lat1, lng1], [lat2,lng2],...]]
 **/
 
 function routeDijkstra(from, to, callback){
-	var visited = []; /**посещенные вершины с постоянной меткой**/
-    var label = [];/**метки вершин**/
-    var prev = [];/**предыдущие вершины**/
+	var visited = []; /**РїРѕСЃРµС‰РµРЅРЅС‹Рµ РІРµСЂС€РёРЅС‹ СЃ РїРѕСЃС‚РѕСЏРЅРЅРѕР№ РјРµС‚РєРѕР№**/
+    var label = [];/**РјРµС‚РєРё РІРµСЂС€РёРЅ**/
+    var prev = [];/**РїСЂРµРґС‹РґСѓС‰РёРµ РІРµСЂС€РёРЅС‹**/
 	var cost = 0;
 	var min = 0;
     start = latlng2node_id(from);
@@ -295,7 +295,7 @@ function routeDijkstra(from, to, callback){
 		callback([]);
 		return false;
 	}
-	//вывод результатов
+	//РІС‹РІРѕРґ СЂРµР·СѓР»СЊС‚Р°С‚РѕРІ
     var lengthPath = label[end-1];
 	var path = [];
 	path.push(end);
@@ -310,16 +310,16 @@ function routeDijkstra(from, to, callback){
 }
 
 /**
-* определение маршрута по алгоритму Дейкстры вариант 2
-* @param from начальная точка
-* @param to конечная точка
-* @param callback функция обратного вызова в которую передается результат в виде
-* массива точек [[lat1, lng1], [lat2,lng2],...]]
+* РѕРїСЂРµРґРµР»РµРЅРёРµ РјР°СЂС€СЂСѓС‚Р° РїРѕ Р°Р»РіРѕСЂРёС‚РјСѓ Р”РµР№РєСЃС‚СЂС‹ РІР°СЂРёР°РЅС‚ 2
+* @param from РЅР°С‡Р°Р»СЊРЅР°СЏ С‚РѕС‡РєР°
+* @param to РєРѕРЅРµС‡РЅР°СЏ С‚РѕС‡РєР°
+* @param callback С„СѓРЅРєС†РёСЏ РѕР±СЂР°С‚РЅРѕРіРѕ РІС‹Р·РѕРІР° РІ РєРѕС‚РѕСЂСѓСЋ РїРµСЂРµРґР°РµС‚СЃСЏ СЂРµР·СѓР»СЊС‚Р°С‚ РІ РІРёРґРµ
+* РјР°СЃСЃРёРІР° С‚РѕС‡РµРє [[lat1, lng1], [lat2,lng2],...]]
 **/
 function routeDijkstra2(from, to, callback){
-    var visited = []; /**посещенные вершины с постоянной меткой**/
-    var label = [];/**метки вершин**/
-    var prev = [];/**предыдущие вершины**/
+    var visited = []; /**РїРѕСЃРµС‰РµРЅРЅС‹Рµ РІРµСЂС€РёРЅС‹ СЃ РїРѕСЃС‚РѕСЏРЅРЅРѕР№ РјРµС‚РєРѕР№**/
+    var label = [];/**РјРµС‚РєРё РІРµСЂС€РёРЅ**/
+    var prev = [];/**РїСЂРµРґС‹РґСѓС‰РёРµ РІРµСЂС€РёРЅС‹**/
 	var cost = 0;
 	var min = 0;
     start = latlng2node_id(from);
@@ -362,7 +362,7 @@ function routeDijkstra2(from, to, callback){
 		callback([]);
 		return false;
 	}
-	//вывод результатов
+	//РІС‹РІРѕРґ СЂРµР·СѓР»СЊС‚Р°С‚РѕРІ
     var lengthPath = label[end-1];
 	var path = [];
 	path.push(end);
@@ -377,21 +377,21 @@ function routeDijkstra2(from, to, callback){
 }
 
 /**
-* определение маршрута по алгоритму Дейкстры вариант 3, с усечением графа
-* @param from начальная точка
-* @param to конечная точка
-* @param callback функция обратного вызова в которую передается результат в виде
-* массива точек [[lat1, lng1], [lat2,lng2],...]]
+* РѕРїСЂРµРґРµР»РµРЅРёРµ РјР°СЂС€СЂСѓС‚Р° РїРѕ Р°Р»РіРѕСЂРёС‚РјСѓ Р”РµР№РєСЃС‚СЂС‹ РІР°СЂРёР°РЅС‚ 3, СЃ СѓСЃРµС‡РµРЅРёРµРј РіСЂР°С„Р°
+* @param from РЅР°С‡Р°Р»СЊРЅР°СЏ С‚РѕС‡РєР°
+* @param to РєРѕРЅРµС‡РЅР°СЏ С‚РѕС‡РєР°
+* @param callback С„СѓРЅРєС†РёСЏ РѕР±СЂР°С‚РЅРѕРіРѕ РІС‹Р·РѕРІР° РІ РєРѕС‚РѕСЂСѓСЋ РїРµСЂРµРґР°РµС‚СЃСЏ СЂРµР·СѓР»СЊС‚Р°С‚ РІ РІРёРґРµ
+* РјР°СЃСЃРёРІР° С‚РѕС‡РµРє [[lat1, lng1], [lat2,lng2],...]]
 **/
 
 function routeDijkstra3(from, to, callback){
-	var visited = []; /**посещенные вершины с постоянной меткой**/
-    var label = [];/**метки вершин**/
-    var prev = [];/**предыдущие вершины**/
-    var nodes_part = []; /**индексный массив части обсчитываемых вершин**/
-	var u = 0; /**длина индексного массива части обсчитываемых вершин**/
+	var visited = []; /**РїРѕСЃРµС‰РµРЅРЅС‹Рµ РІРµСЂС€РёРЅС‹ СЃ РїРѕСЃС‚РѕСЏРЅРЅРѕР№ РјРµС‚РєРѕР№**/
+    var label = [];/**РјРµС‚РєРё РІРµСЂС€РёРЅ**/
+    var prev = [];/**РїСЂРµРґС‹РґСѓС‰РёРµ РІРµСЂС€РёРЅС‹**/
+    var nodes_part = []; /**РёРЅРґРµРєСЃРЅС‹Р№ РјР°СЃСЃРёРІ С‡Р°СЃС‚Рё РѕР±СЃС‡РёС‚С‹РІР°РµРјС‹С… РІРµСЂС€РёРЅ**/
+	var u = 0; /**РґР»РёРЅР° РёРЅРґРµРєСЃРЅРѕРіРѕ РјР°СЃСЃРёРІР° С‡Р°СЃС‚Рё РѕР±СЃС‡РёС‚С‹РІР°РµРјС‹С… РІРµСЂС€РёРЅ**/
 
-	//определяем границы
+	//РѕРїСЂРµРґРµР»СЏРµРј РіСЂР°РЅРёС†С‹
 	
 	var delta = Math.max(Math.abs(from[0] - to[0]),Math.abs(from[1] - to[1]))*margin;
 	var lat_min = Math.min(from[0], to[0]) - delta;
@@ -404,7 +404,7 @@ function routeDijkstra3(from, to, callback){
 	if ( lng_max < -180 ){ lng_max = 360 + lng_max;} else if ( lng_max > 180 ){ lng_max = lng_max - 360;}
 	
 	console.log('lat_min: '+lat_min+'\nlat_max: '+lat_max+'\nlng_min: '+lng_min+'\nlng_max: '+lng_max);
-	//отбираем нужную часть графа
+	//РѕС‚Р±РёСЂР°РµРј РЅСѓР¶РЅСѓСЋ С‡Р°СЃС‚СЊ РіСЂР°С„Р°
 	for ( var i = 0; i < n; i++ ){
 		var lat = nodes[i].lat;
 		var lng = nodes[i].lng;
@@ -414,11 +414,11 @@ function routeDijkstra3(from, to, callback){
 	}
 	u = nodes_part.length;
 	console.log(u);
-	//определяем начало и конец в усеченном графе
+	//РѕРїСЂРµРґРµР»СЏРµРј РЅР°С‡Р°Р»Рѕ Рё РєРѕРЅРµС† РІ СѓСЃРµС‡РµРЅРЅРѕРј РіСЂР°С„Рµ
 	var start = latlng2node_id_part(from,nodes_part,u);
     var end = latlng2node_id_part(to,nodes_part,u);
 	console.log(start+':'+end);
-	//расчет маршрута
+	//СЂР°СЃС‡РµС‚ РјР°СЂС€СЂСѓС‚Р°
 	var curr = start;
     for ( var i = 0; i < u; i++ ){
 	   visited.push(0);
@@ -448,7 +448,7 @@ function routeDijkstra3(from, to, callback){
 				index = i;
 			}
 		}//end for
-		visited[index] = 1; //присваиваем узлу постоянную метку
+		visited[index] = 1; //РїСЂРёСЃРІР°РёРІР°РµРј СѓР·Р»Сѓ РїРѕСЃС‚РѕСЏРЅРЅСѓСЋ РјРµС‚РєСѓ
 		curr = index;
 		if ( min == INF ) break;
 	}//end while
@@ -456,7 +456,7 @@ function routeDijkstra3(from, to, callback){
 		callback([]);
 		return false;
 	} 
-	//вывод результатов
+	//РІС‹РІРѕРґ СЂРµР·СѓР»СЊС‚Р°С‚РѕРІ
 	var lengthPath = label[end];
 	var path = [];
 	path.push(nodes_part[end]+1);
@@ -472,17 +472,17 @@ function routeDijkstra3(from, to, callback){
 
 
 /**
-* определение маршрута по алгоритму Дейкстры вариант 4 с обходом полков неприятеля
-* @param from начальная точка
-* @param to конечная точка
-* @param enemy массив полков неприятеля вида [{lat:lat, lng:lng, radius:radius}, ...]
-* @param callback функция обратного вызова в которую передается результат в виде
-* массива точек [[lat1, lng1], [lat2,lng2],...]]
+* РѕРїСЂРµРґРµР»РµРЅРёРµ РјР°СЂС€СЂСѓС‚Р° РїРѕ Р°Р»РіРѕСЂРёС‚РјСѓ Р”РµР№РєСЃС‚СЂС‹ РІР°СЂРёР°РЅС‚ 4 СЃ РѕР±С…РѕРґРѕРј РїРѕР»РєРѕРІ РЅРµРїСЂРёСЏС‚РµР»СЏ
+* @param from РЅР°С‡Р°Р»СЊРЅР°СЏ С‚РѕС‡РєР°
+* @param to РєРѕРЅРµС‡РЅР°СЏ С‚РѕС‡РєР°
+* @param enemy РјР°СЃСЃРёРІ РїРѕР»РєРѕРІ РЅРµРїСЂРёСЏС‚РµР»СЏ РІРёРґР° [{lat:lat, lng:lng, radius:radius}, ...]
+* @param callback С„СѓРЅРєС†РёСЏ РѕР±СЂР°С‚РЅРѕРіРѕ РІС‹Р·РѕРІР° РІ РєРѕС‚РѕСЂСѓСЋ РїРµСЂРµРґР°РµС‚СЃСЏ СЂРµР·СѓР»СЊС‚Р°С‚ РІ РІРёРґРµ
+* РјР°СЃСЃРёРІР° С‚РѕС‡РµРє [[lat1, lng1], [lat2,lng2],...]]
 **/
 function routeDijkstraEnemy(from, to, enemy, callback){
-    var visited = []; /**посещенные вершины с постоянной меткой**/
-    var label = [];/**метки вершин**/
-    var prev = [];/**предыдущие вершины**/
+    var visited = []; /**РїРѕСЃРµС‰РµРЅРЅС‹Рµ РІРµСЂС€РёРЅС‹ СЃ РїРѕСЃС‚РѕСЏРЅРЅРѕР№ РјРµС‚РєРѕР№**/
+    var label = [];/**РјРµС‚РєРё РІРµСЂС€РёРЅ**/
+    var prev = [];/**РїСЂРµРґС‹РґСѓС‰РёРµ РІРµСЂС€РёРЅС‹**/
 	var cost = 0;
 	var min = 0;
     start = latlng2node_id(from);
@@ -526,7 +526,7 @@ function routeDijkstraEnemy(from, to, enemy, callback){
 		callback([]);
 		return false;
 	}
-	//вывод результатов
+	//РІС‹РІРѕРґ СЂРµР·СѓР»СЊС‚Р°С‚РѕРІ
     var lengthPath = label[end-1];
 	var path = [];
 	path.push(end);
@@ -542,24 +542,24 @@ function routeDijkstraEnemy(from, to, enemy, callback){
 
 
 /**
-* определение маршрута по алгоритму Дейкстры вариант 5 с обходом полков неприятеля
-* и c усечением графа
-* @param from начальная точка
-* @param to конечная точка
-* @param enemy массив полков неприятеля вида [{lat:lat, lng:lng, radius:radius}, ...]
-* @param callback функция обратного вызова в которую передается результат в виде
-* массива точек [[lat1, lng1], [lat2,lng2],...]]
+* РѕРїСЂРµРґРµР»РµРЅРёРµ РјР°СЂС€СЂСѓС‚Р° РїРѕ Р°Р»РіРѕСЂРёС‚РјСѓ Р”РµР№РєСЃС‚СЂС‹ РІР°СЂРёР°РЅС‚ 5 СЃ РѕР±С…РѕРґРѕРј РїРѕР»РєРѕРІ РЅРµРїСЂРёСЏС‚РµР»СЏ
+* Рё c СѓСЃРµС‡РµРЅРёРµРј РіСЂР°С„Р°
+* @param from РЅР°С‡Р°Р»СЊРЅР°СЏ С‚РѕС‡РєР°
+* @param to РєРѕРЅРµС‡РЅР°СЏ С‚РѕС‡РєР°
+* @param enemy РјР°СЃСЃРёРІ РїРѕР»РєРѕРІ РЅРµРїСЂРёСЏС‚РµР»СЏ РІРёРґР° [{lat:lat, lng:lng, radius:radius}, ...]
+* @param callback С„СѓРЅРєС†РёСЏ РѕР±СЂР°С‚РЅРѕРіРѕ РІС‹Р·РѕРІР° РІ РєРѕС‚РѕСЂСѓСЋ РїРµСЂРµРґР°РµС‚СЃСЏ СЂРµР·СѓР»СЊС‚Р°С‚ РІ РІРёРґРµ
+* РјР°СЃСЃРёРІР° С‚РѕС‡РµРє [[lat1, lng1], [lat2,lng2],...]]
 **/
 function routeDijkstraEnemy2(from, to, enemy, callback){
-    var visited = []; /**посещенные вершины с постоянной меткой**/
-    var label = [];/**метки вершин**/
-    var prev = [];/**предыдущие вершины**/
+    var visited = []; /**РїРѕСЃРµС‰РµРЅРЅС‹Рµ РІРµСЂС€РёРЅС‹ СЃ РїРѕСЃС‚РѕСЏРЅРЅРѕР№ РјРµС‚РєРѕР№**/
+    var label = [];/**РјРµС‚РєРё РІРµСЂС€РёРЅ**/
+    var prev = [];/**РїСЂРµРґС‹РґСѓС‰РёРµ РІРµСЂС€РёРЅС‹**/
 	var cost = 0;
 	var min = 0;
-	var nodes_part = []; /**индексный массив части обсчитываемых вершин**/
-	var u = 0; /**длина индексного массива части обсчитываемых вершин**/
+	var nodes_part = []; /**РёРЅРґРµРєСЃРЅС‹Р№ РјР°СЃСЃРёРІ С‡Р°СЃС‚Рё РѕР±СЃС‡РёС‚С‹РІР°РµРјС‹С… РІРµСЂС€РёРЅ**/
+	var u = 0; /**РґР»РёРЅР° РёРЅРґРµРєСЃРЅРѕРіРѕ РјР°СЃСЃРёРІР° С‡Р°СЃС‚Рё РѕР±СЃС‡РёС‚С‹РІР°РµРјС‹С… РІРµСЂС€РёРЅ**/
 
-	//определяем границы
+	//РѕРїСЂРµРґРµР»СЏРµРј РіСЂР°РЅРёС†С‹
 	
 	var delta = Math.max(Math.abs(from[0] - to[0]),Math.abs(from[1] - to[1]))*margin2;
 	var lat_min = Math.min(from[0], to[0]) - delta;
@@ -572,7 +572,7 @@ function routeDijkstraEnemy2(from, to, enemy, callback){
 	if ( lng_max < -180 ){ lng_max = 360 + lng_max;} else if ( lng_max > 180 ){ lng_max = lng_max - 360;}
 	
 	console.log('lat_min: '+lat_min+'\nlat_max: '+lat_max+'\nlng_min: '+lng_min+'\nlng_max: '+lng_max);
-	//отбираем нужную часть графа
+	//РѕС‚Р±РёСЂР°РµРј РЅСѓР¶РЅСѓСЋ С‡Р°СЃС‚СЊ РіСЂР°С„Р°
 	for ( var i = 0; i < n; i++ ){
 		var lat = nodes[i].lat;
 		var lng = nodes[i].lng;
@@ -581,7 +581,7 @@ function routeDijkstraEnemy2(from, to, enemy, callback){
 		}
 	}
 	u = nodes_part.length;
-    //определяем начало и конец в усеченном графе
+    //РѕРїСЂРµРґРµР»СЏРµРј РЅР°С‡Р°Р»Рѕ Рё РєРѕРЅРµС† РІ СѓСЃРµС‡РµРЅРЅРѕРј РіСЂР°С„Рµ
 	var start = latlng2node_id_part(from,nodes_part,u);
     var end = latlng2node_id_part(to,nodes_part,u);
 	console.log(start+':'+end);
@@ -624,7 +624,7 @@ function routeDijkstraEnemy2(from, to, enemy, callback){
 		callback([]);
 		return false;
 	}
-	//вывод результатов
+	//РІС‹РІРѕРґ СЂРµР·СѓР»СЊС‚Р°С‚РѕРІ
 	var lengthPath = label[end];
 	var path = [];
 	path.push(nodes_part[end]+1);
@@ -640,16 +640,16 @@ function routeDijkstraEnemy2(from, to, enemy, callback){
 
 
 /**
-* определение маршрута методом обхода в ширину
-* @param from начальная точка
-* @param to конечная точка
-* @param callback функция обратного вызова в которую передается результат в виде
-* массива точек [[lat1, lng1], [lat2,lng2],...]]
+* РѕРїСЂРµРґРµР»РµРЅРёРµ РјР°СЂС€СЂСѓС‚Р° РјРµС‚РѕРґРѕРј РѕР±С…РѕРґР° РІ С€РёСЂРёРЅСѓ
+* @param from РЅР°С‡Р°Р»СЊРЅР°СЏ С‚РѕС‡РєР°
+* @param to РєРѕРЅРµС‡РЅР°СЏ С‚РѕС‡РєР°
+* @param callback С„СѓРЅРєС†РёСЏ РѕР±СЂР°С‚РЅРѕРіРѕ РІС‹Р·РѕРІР° РІ РєРѕС‚РѕСЂСѓСЋ РїРµСЂРµРґР°РµС‚СЃСЏ СЂРµР·СѓР»СЊС‚Р°С‚ РІ РІРёРґРµ
+* РјР°СЃСЃРёРІР° С‚РѕС‡РµРє [[lat1, lng1], [lat2,lng2],...]]
 **/
 function bypassingWide(from, to, callback){
-	var queue = []; /**очередь**/
-	var used = []; /**посещенные вершины**/
-	var prev = []; /**предки вершин**/
+	var queue = []; /**РѕС‡РµСЂРµРґСЊ**/
+	var used = []; /**РїРѕСЃРµС‰РµРЅРЅС‹Рµ РІРµСЂС€РёРЅС‹**/
+	var prev = []; /**РїСЂРµРґРєРё РІРµСЂС€РёРЅ**/
 	for ( var i = 0; i < n; i++ ){
 		used[i] = false;
 		prev[i] = 0;
@@ -678,7 +678,7 @@ function bypassingWide(from, to, callback){
 		callback([]);
 		return false;
 	}
-	//вывод результатов
+	//РІС‹РІРѕРґ СЂРµР·СѓР»СЊС‚Р°С‚РѕРІ
 	var path = [];
 	path.push(end);
 	curr = end;
@@ -692,17 +692,17 @@ function bypassingWide(from, to, callback){
 }
 
 /**
-* определение маршрута методом обхода в ширину с обходом полков неприятеля
-* @param from начальная точка
-* @param to конечная точка
-* @param enemy массив полков неприятеля вида [{lat:lat, lng:lng, radius:radius}, ...]
-* @param callback функция обратного вызова в которую передается результат в виде
-* массива точек [[lat1, lng1], [lat2,lng2],...]]
+* РѕРїСЂРµРґРµР»РµРЅРёРµ РјР°СЂС€СЂСѓС‚Р° РјРµС‚РѕРґРѕРј РѕР±С…РѕРґР° РІ С€РёСЂРёРЅСѓ СЃ РѕР±С…РѕРґРѕРј РїРѕР»РєРѕРІ РЅРµРїСЂРёСЏС‚РµР»СЏ
+* @param from РЅР°С‡Р°Р»СЊРЅР°СЏ С‚РѕС‡РєР°
+* @param to РєРѕРЅРµС‡РЅР°СЏ С‚РѕС‡РєР°
+* @param enemy РјР°СЃСЃРёРІ РїРѕР»РєРѕРІ РЅРµРїСЂРёСЏС‚РµР»СЏ РІРёРґР° [{lat:lat, lng:lng, radius:radius}, ...]
+* @param callback С„СѓРЅРєС†РёСЏ РѕР±СЂР°С‚РЅРѕРіРѕ РІС‹Р·РѕРІР° РІ РєРѕС‚РѕСЂСѓСЋ РїРµСЂРµРґР°РµС‚СЃСЏ СЂРµР·СѓР»СЊС‚Р°С‚ РІ РІРёРґРµ
+* РјР°СЃСЃРёРІР° С‚РѕС‡РµРє [[lat1, lng1], [lat2,lng2],...]]
 **/
 function bypassingWideEnemy(from, to, enemy, callback){
-	var queue = []; /**очередь**/
-	var used = []; /**посещенные вершины**/
-	var prev = []; /**предки вершин**/
+	var queue = []; /**РѕС‡РµСЂРµРґСЊ**/
+	var used = []; /**РїРѕСЃРµС‰РµРЅРЅС‹Рµ РІРµСЂС€РёРЅС‹**/
+	var prev = []; /**РїСЂРµРґРєРё РІРµСЂС€РёРЅ**/
 	for ( var i = 0; i < n; i++ ){
 		used[i] = false;
 		prev[i] = 0;
@@ -733,7 +733,7 @@ function bypassingWideEnemy(from, to, enemy, callback){
 		callback([]);
 		return false;
 	}
-	//вывод результатов
+	//РІС‹РІРѕРґ СЂРµР·СѓР»СЊС‚Р°С‚РѕРІ
 	var path = [];
 	path.push(end);
 	curr = end;
@@ -747,18 +747,18 @@ function bypassingWideEnemy(from, to, enemy, callback){
 }
 
 /**
-* определение маршрута волновым алгоритмом
-* @param from начальная точка
-* @param to конечная точка
-* @param callback функция обратного вызова в которую передается результат в виде
-* массива точек [[lat1, lng1], [lat2,lng2],...]]
+* РѕРїСЂРµРґРµР»РµРЅРёРµ РјР°СЂС€СЂСѓС‚Р° РІРѕР»РЅРѕРІС‹Рј Р°Р»РіРѕСЂРёС‚РјРѕРј
+* @param from РЅР°С‡Р°Р»СЊРЅР°СЏ С‚РѕС‡РєР°
+* @param to РєРѕРЅРµС‡РЅР°СЏ С‚РѕС‡РєР°
+* @param callback С„СѓРЅРєС†РёСЏ РѕР±СЂР°С‚РЅРѕРіРѕ РІС‹Р·РѕРІР° РІ РєРѕС‚РѕСЂСѓСЋ РїРµСЂРµРґР°РµС‚СЃСЏ СЂРµР·СѓР»СЊС‚Р°С‚ РІ РІРёРґРµ
+* РјР°СЃСЃРёРІР° С‚РѕС‡РµРє [[lat1, lng1], [lat2,lng2],...]]
 **/
 function routeWave(from, to, callback){
-	var waveLabel = []; /**волновая метка**/
-	var T = 0;/**время**/
-	var oldFront = [];/**старый фронт**/
-	var newFront = [];/**новый фронт**/
-	var prev = []; /**предки вершин**/
+	var waveLabel = []; /**РІРѕР»РЅРѕРІР°СЏ РјРµС‚РєР°**/
+	var T = 0;/**РІСЂРµРјСЏ**/
+	var oldFront = [];/**СЃС‚Р°СЂС‹Р№ С„СЂРѕРЅС‚**/
+	var newFront = [];/**РЅРѕРІС‹Р№ С„СЂРѕРЅС‚**/
+	var prev = []; /**РїСЂРµРґРєРё РІРµСЂС€РёРЅ**/
 	var curr = null;
 	var id = null;
 	for ( var i = 0; i < n; i++ ){
@@ -786,8 +786,8 @@ function routeWave(from, to, callback){
 				}
 				
 				if ( id == end ){
-					//решение найдено
-					//вывод результатов
+					//СЂРµС€РµРЅРёРµ РЅР°Р№РґРµРЅРѕ
+					//РІС‹РІРѕРґ СЂРµР·СѓР»СЊС‚Р°С‚РѕРІ
 					var path = [];
 					path.push(end);
 					curr = end;
@@ -813,19 +813,19 @@ function routeWave(from, to, callback){
 }
 
 /**
-* определение маршрута волновым алгоритмом с обходом полков неприятеля
-* @param from начальная точка
-* @param to конечная точка
-* @param enemy массив полков неприятеля вида [{lat:lat, lng:lng, radius:radius}, ...]
-* @param callback функция обратного вызова в которую передается результат в виде
-* массива точек [[lat1, lng1], [lat2,lng2],...]]
+* РѕРїСЂРµРґРµР»РµРЅРёРµ РјР°СЂС€СЂСѓС‚Р° РІРѕР»РЅРѕРІС‹Рј Р°Р»РіРѕСЂРёС‚РјРѕРј СЃ РѕР±С…РѕРґРѕРј РїРѕР»РєРѕРІ РЅРµРїСЂРёСЏС‚РµР»СЏ
+* @param from РЅР°С‡Р°Р»СЊРЅР°СЏ С‚РѕС‡РєР°
+* @param to РєРѕРЅРµС‡РЅР°СЏ С‚РѕС‡РєР°
+* @param enemy РјР°СЃСЃРёРІ РїРѕР»РєРѕРІ РЅРµРїСЂРёСЏС‚РµР»СЏ РІРёРґР° [{lat:lat, lng:lng, radius:radius}, ...]
+* @param callback С„СѓРЅРєС†РёСЏ РѕР±СЂР°С‚РЅРѕРіРѕ РІС‹Р·РѕРІР° РІ РєРѕС‚РѕСЂСѓСЋ РїРµСЂРµРґР°РµС‚СЃСЏ СЂРµР·СѓР»СЊС‚Р°С‚ РІ РІРёРґРµ
+* РјР°СЃСЃРёРІР° С‚РѕС‡РµРє [[lat1, lng1], [lat2,lng2],...]]
 **/
 function routeWaveEnemy(from, to, enemy, callback){
-	var waveLabel = []; /**волновая метка**/
-	var T = 0;/**время**/
-	var oldFront = [];/**старый фронт**/
-	var newFront = [];/**новый фронт**/
-	var prev = []; /**предки вершин**/
+	var waveLabel = []; /**РІРѕР»РЅРѕРІР°СЏ РјРµС‚РєР°**/
+	var T = 0;/**РІСЂРµРјСЏ**/
+	var oldFront = [];/**СЃС‚Р°СЂС‹Р№ С„СЂРѕРЅС‚**/
+	var newFront = [];/**РЅРѕРІС‹Р№ С„СЂРѕРЅС‚**/
+	var prev = []; /**РїСЂРµРґРєРё РІРµСЂС€РёРЅ**/
 	var curr = null;
 	var id = null;
 	for ( var i = 0; i < n; i++ ){
@@ -856,8 +856,8 @@ function routeWaveEnemy(from, to, enemy, callback){
 				}
 				
 				if ( id == end ){
-					//решение найдено
-					//вывод результатов
+					//СЂРµС€РµРЅРёРµ РЅР°Р№РґРµРЅРѕ
+					//РІС‹РІРѕРґ СЂРµР·СѓР»СЊС‚Р°С‚РѕРІ
 					var path = [];
 					path.push(end);
 					curr = end;
@@ -884,23 +884,23 @@ function routeWaveEnemy(from, to, enemy, callback){
 
 
 /**
-* поиск маршрута до любой из заданных баз с обходом полков неприятеля
-* волновым алгоритмом 
-* @param index номер попытки
-* @param from начальная точка вида {lat:lat, lng:lng, radius:radius}
-* @param to  конечная точка (база) вида {lat:lat, lng:lng, radius:radius}
-* @param enemy массив полков неприятеля вида [{lat:lat, lng:lng, radius:radius}, ...]
-* @param callback функция обратного вызова в которую передается результат в виде
-* true(если маршрут найден) или false (если не найден)
+* РїРѕРёСЃРє РјР°СЂС€СЂСѓС‚Р° РґРѕ Р»СЋР±РѕР№ РёР· Р·Р°РґР°РЅРЅС‹С… Р±Р°Р· СЃ РѕР±С…РѕРґРѕРј РїРѕР»РєРѕРІ РЅРµРїСЂРёСЏС‚РµР»СЏ
+* РІРѕР»РЅРѕРІС‹Рј Р°Р»РіРѕСЂРёС‚РјРѕРј 
+* @param index РЅРѕРјРµСЂ РїРѕРїС‹С‚РєРё
+* @param from РЅР°С‡Р°Р»СЊРЅР°СЏ С‚РѕС‡РєР° РІРёРґР° {lat:lat, lng:lng, radius:radius}
+* @param to  РєРѕРЅРµС‡РЅР°СЏ С‚РѕС‡РєР° (Р±Р°Р·Р°) РІРёРґР° {lat:lat, lng:lng, radius:radius}
+* @param enemy РјР°СЃСЃРёРІ РїРѕР»РєРѕРІ РЅРµРїСЂРёСЏС‚РµР»СЏ РІРёРґР° [{lat:lat, lng:lng, radius:radius}, ...]
+* @param callback С„СѓРЅРєС†РёСЏ РѕР±СЂР°С‚РЅРѕРіРѕ РІС‹Р·РѕРІР° РІ РєРѕС‚РѕСЂСѓСЋ РїРµСЂРµРґР°РµС‚СЃСЏ СЂРµР·СѓР»СЊС‚Р°С‚ РІ РІРёРґРµ
+* true(РµСЃР»Рё РјР°СЂС€СЂСѓС‚ РЅР°Р№РґРµРЅ) РёР»Рё false (РµСЃР»Рё РЅРµ РЅР°Р№РґРµРЅ)
 **/
 function findRouteToBase(index, from, to, enemy, callback){
 	//console.log(from,to,enemy);
 	//callback([]); return;
-	var waveLabel = []; /**волновая метка**/
-	var T = 0;/**время**/
-	var oldFront = [];/**старый фронт**/
-	var newFront = [];/**новый фронт**/
-	var prev = []; /**предки вершин**/
+	var waveLabel = []; /**РІРѕР»РЅРѕРІР°СЏ РјРµС‚РєР°**/
+	var T = 0;/**РІСЂРµРјСЏ**/
+	var oldFront = [];/**СЃС‚Р°СЂС‹Р№ С„СЂРѕРЅС‚**/
+	var newFront = [];/**РЅРѕРІС‹Р№ С„СЂРѕРЅС‚**/
+	var prev = []; /**РїСЂРµРґРєРё РІРµСЂС€РёРЅ**/
 	var curr = null;
 	var id = null;
 	var start = null;
@@ -909,7 +909,7 @@ function findRouteToBase(index, from, to, enemy, callback){
 		prev[i] = 0;
 	}
 	if ( index != 0 ){
-		/*сдвигаем точку в случ. порядке*/
+		/*СЃРґРІРёРіР°РµРј С‚РѕС‡РєСѓ РІ СЃР»СѓС‡. РїРѕСЂСЏРґРєРµ*/
 		start = latlng2node_id([from.lat + from.radius*(2*Math.random()-1),from.lng + from.radius*(2*Math.random()-1)]);
 	}else{
 		start = latlng2node_id([from.lat,from.lng]);
@@ -938,8 +938,8 @@ function findRouteToBase(index, from, to, enemy, callback){
 				}
 				
 				if ( targets.indexOf(id) != -1 ){
-					//решение найдено
-					//вывод результатов
+					//СЂРµС€РµРЅРёРµ РЅР°Р№РґРµРЅРѕ
+					//РІС‹РІРѕРґ СЂРµР·СѓР»СЊС‚Р°С‚РѕРІ
 					var end = targets[targets.indexOf(id)];
 					var path = [];
 					path.push(end);
@@ -972,11 +972,11 @@ function findRouteToBase(index, from, to, enemy, callback){
 }
 
 /**
-* преобразование последовательности id узлов в массив путь
-* в виде
-* массива точек [[lat1, lng1], [lat2,lng2],...]]
-* @param path последовательность узлов
-* @return route массив точек [[lat1, lng1], [lat2,lng2],...]]
+* РїСЂРµРѕР±СЂР°Р·РѕРІР°РЅРёРµ РїРѕСЃР»РµРґРѕРІР°С‚РµР»СЊРЅРѕСЃС‚Рё id СѓР·Р»РѕРІ РІ РјР°СЃСЃРёРІ РїСѓС‚СЊ
+* РІ РІРёРґРµ
+* РјР°СЃСЃРёРІР° С‚РѕС‡РµРє [[lat1, lng1], [lat2,lng2],...]]
+* @param path РїРѕСЃР»РµРґРѕРІР°С‚РµР»СЊРЅРѕСЃС‚СЊ СѓР·Р»РѕРІ
+* @return route РјР°СЃСЃРёРІ С‚РѕС‡РµРє [[lat1, lng1], [lat2,lng2],...]]
 **/
 function path2route(path){
 	var route = [];
@@ -993,7 +993,7 @@ function path2route(path){
 }
 
 /**
-* меняем местами широту и долготу в массиве точек
+* РјРµРЅСЏРµРј РјРµСЃС‚Р°РјРё С€РёСЂРѕС‚Сѓ Рё РґРѕР»РіРѕС‚Сѓ РІ РјР°СЃСЃРёРІРµ С‚РѕС‡РµРє
 **/
 function reverse(route){
     var reverse_route = [];
@@ -1005,7 +1005,7 @@ function reverse(route){
 }
 
 /**
-* меняем местами широту и долготу в массиве массивов точек
+* РјРµРЅСЏРµРј РјРµСЃС‚Р°РјРё С€РёСЂРѕС‚Сѓ Рё РґРѕР»РіРѕС‚Сѓ РІ РјР°СЃСЃРёРІРµ РјР°СЃСЃРёРІРѕРІ С‚РѕС‡РµРє
 **/
 function reverse2(route){
     var reverse_route = [];
@@ -1016,9 +1016,9 @@ function reverse2(route){
 }
 
 /**
-* получение координат узла по id
-* @param node_id id узла
-* @return массив координат [lat,lng]
+* РїРѕР»СѓС‡РµРЅРёРµ РєРѕРѕСЂРґРёРЅР°С‚ СѓР·Р»Р° РїРѕ id
+* @param node_id id СѓР·Р»Р°
+* @return РјР°СЃСЃРёРІ РєРѕРѕСЂРґРёРЅР°С‚ [lat,lng]
 **/
 function node_id2latlng(node_id){
 	if ( node_id < 0 || node_id >= n ) return [undefined, undefined];
@@ -1026,9 +1026,9 @@ function node_id2latlng(node_id){
 }
 
 /**
-* получение id узла по координатам
-* @param dot массив координат [lat,lng]
-* @return id узла 
+* РїРѕР»СѓС‡РµРЅРёРµ id СѓР·Р»Р° РїРѕ РєРѕРѕСЂРґРёРЅР°С‚Р°Рј
+* @param dot РјР°СЃСЃРёРІ РєРѕРѕСЂРґРёРЅР°С‚ [lat,lng]
+* @return id СѓР·Р»Р° 
 **/
 function latlng2node_id(dot){
 	var node_id = 1;
@@ -1045,9 +1045,9 @@ function latlng2node_id(dot){
 }
 
 /**
-* получение id узла по координатам в усеченном графе
-* @param dot массив координат [lat,lng]
-* @return id узла 
+* РїРѕР»СѓС‡РµРЅРёРµ id СѓР·Р»Р° РїРѕ РєРѕРѕСЂРґРёРЅР°С‚Р°Рј РІ СѓСЃРµС‡РµРЅРЅРѕРј РіСЂР°С„Рµ
+* @param dot РјР°СЃСЃРёРІ РєРѕРѕСЂРґРёРЅР°С‚ [lat,lng]
+* @return id СѓР·Р»Р° 
 **/
 function latlng2node_id_part(dot,nodes_part,u){
 	var node_id = 0;
@@ -1063,17 +1063,17 @@ function latlng2node_id_part(dot,nodes_part,u){
 }
 
 /**
-* вычисление квадрата расстояния между точкой и узлом графа
-* @param dot точка, заданная как массив координат [lat,lng]
-* @param node узел графа, заданный как объект вида {node_id:node_id,lat:lat,lng:lng }
-* @return квадрат расстояния (без учета кривизны) 
+* РІС‹С‡РёСЃР»РµРЅРёРµ РєРІР°РґСЂР°С‚Р° СЂР°СЃСЃС‚РѕСЏРЅРёСЏ РјРµР¶РґСѓ С‚РѕС‡РєРѕР№ Рё СѓР·Р»РѕРј РіСЂР°С„Р°
+* @param dot С‚РѕС‡РєР°, Р·Р°РґР°РЅРЅР°СЏ РєР°Рє РјР°СЃСЃРёРІ РєРѕРѕСЂРґРёРЅР°С‚ [lat,lng]
+* @param node СѓР·РµР» РіСЂР°С„Р°, Р·Р°РґР°РЅРЅС‹Р№ РєР°Рє РѕР±СЉРµРєС‚ РІРёРґР° {node_id:node_id,lat:lat,lng:lng }
+* @return РєРІР°РґСЂР°С‚ СЂР°СЃСЃС‚РѕСЏРЅРёСЏ (Р±РµР· СѓС‡РµС‚Р° РєСЂРёРІРёР·РЅС‹) 
 **/
 function distance(dot, node){
 	return (dot[0]-node.lat)*(dot[0]-node.lat) + (dot[1]-node.lng)*(dot[1]-node.lng);
 }
 
 /**
-* вывод всех дорог
+* РІС‹РІРѕРґ РІСЃРµС… РґРѕСЂРѕРі
 **/
 function getAllRoads(callback){
 	var allroads = [];
@@ -1086,7 +1086,7 @@ function getAllRoads(callback){
 }
 
 /**
-* вывод всех узлов
+* РІС‹РІРѕРґ РІСЃРµС… СѓР·Р»РѕРІ
 **/
 function getAllNodes(callback){
 	var allnodes = [];
@@ -1097,7 +1097,7 @@ function getAllNodes(callback){
 }
 
 /**
-* вывод всех запрещенных узлов
+* РІС‹РІРѕРґ РІСЃРµС… Р·Р°РїСЂРµС‰РµРЅРЅС‹С… СѓР·Р»РѕРІ
 **/
 function getRestirctedNodes(enemy, callback){
 	var restricted = [];
@@ -1112,7 +1112,7 @@ function getRestirctedNodes(enemy, callback){
 }
 
 /**
-* получение всех запрещенных узлов
+* РїРѕР»СѓС‡РµРЅРёРµ РІСЃРµС… Р·Р°РїСЂРµС‰РµРЅРЅС‹С… СѓР·Р»РѕРІ
 **/
 function getBannedNodesId(enemy){
 	var restricted = [];
@@ -1127,7 +1127,7 @@ function getBannedNodesId(enemy){
 }
 
 /**
-* получение всех запрещенных узлов 2 вариант (исключаем узлы в радиусе полка)
+* РїРѕР»СѓС‡РµРЅРёРµ РІСЃРµС… Р·Р°РїСЂРµС‰РµРЅРЅС‹С… СѓР·Р»РѕРІ 2 РІР°СЂРёР°РЅС‚ (РёСЃРєР»СЋС‡Р°РµРј СѓР·Р»С‹ РІ СЂР°РґРёСѓСЃРµ РїРѕР»РєР°)
 **/
 function getBannedNodesId2(from, enemy){
 	var restricted = [];
@@ -1145,7 +1145,7 @@ function getBannedNodesId2(from, enemy){
 }
 
 /**
-* получение всех целевых узлов
+* РїРѕР»СѓС‡РµРЅРёРµ РІСЃРµС… С†РµР»РµРІС‹С… СѓР·Р»РѕРІ
 **/
 function getTargetsNodesId(to){
 	var targets = [];
@@ -1156,7 +1156,7 @@ function getTargetsNodesId(to){
 }
 
 /**
-* получение всех целевых узлов (узлов в радиусе базы)
+* РїРѕР»СѓС‡РµРЅРёРµ РІСЃРµС… С†РµР»РµРІС‹С… СѓР·Р»РѕРІ (СѓР·Р»РѕРІ РІ СЂР°РґРёСѓСЃРµ Р±Р°Р·С‹)
 **/
 function getTargetsNodesId2(to){
 	var targets = [];
@@ -1170,9 +1170,9 @@ function getTargetsNodesId2(to){
 }
 
 /**
-* перемещение точки
-* @param dot объект точки вида {lat:lat, lng:lng,radius:radius}
-* @return dot_new объект точки вида {lat:lat, lng:lng,radius:radius}
+* РїРµСЂРµРјРµС‰РµРЅРёРµ С‚РѕС‡РєРё
+* @param dot РѕР±СЉРµРєС‚ С‚РѕС‡РєРё РІРёРґР° {lat:lat, lng:lng,radius:radius}
+* @return dot_new РѕР±СЉРµРєС‚ С‚РѕС‡РєРё РІРёРґР° {lat:lat, lng:lng,radius:radius}
 **/
 function randomMoveDot(dot){
 	var radius = dot.radius;
@@ -1183,25 +1183,25 @@ function randomMoveDot(dot){
 }
 
 /**
-* вычисление расстояния на сфере  в градусах
-* @param do1,dot2 точки, заданные массивами кооординат [lat,lng]
+* РІС‹С‡РёСЃР»РµРЅРёРµ СЂР°СЃСЃС‚РѕСЏРЅРёСЏ РЅР° СЃС„РµСЂРµ  РІ РіСЂР°РґСѓСЃР°С…
+* @param do1,dot2 С‚РѕС‡РєРё, Р·Р°РґР°РЅРЅС‹Рµ РјР°СЃСЃРёРІР°РјРё РєРѕРѕРѕСЂРґРёРЅР°С‚ [lat,lng]
 **/
 function rastGrad(dot1,dot2){
 
-	/**координаты двух точек**/
+	/**РєРѕРѕСЂРґРёРЅР°С‚С‹ РґРІСѓС… С‚РѕС‡РµРє**/
 	var llat1 = dot1[0];
 	var llong1 = dot1[1];
 
 	var llat2 = dot2[0];
 	var llong2 = dot2[1];
 
-	/**в радианах**/
+	/**РІ СЂР°РґРёР°РЅР°С…**/
 	var lat1 = llat1*Math.PI/180;
 	var lat2 = llat2*Math.PI/180;
 	var long1 = llong1*Math.PI/180;
 	var long2 = llong2*Math.PI/180;
 
-	/**косинусы и синусы широт и разницы долгот**/
+	/**РєРѕСЃРёРЅСѓСЃС‹ Рё СЃРёРЅСѓСЃС‹ С€РёСЂРѕС‚ Рё СЂР°Р·РЅРёС†С‹ РґРѕР»РіРѕС‚**/
 	var cl1 = Math.cos(lat1)
 	var cl2 = Math.cos(lat2)
 	var sl1 = Math.sin(lat1)
@@ -1210,7 +1210,7 @@ function rastGrad(dot1,dot2){
 	var cdelta = Math.cos(delta)
 	var sdelta = Math.sin(delta)
 
-	/**вычисления длины большого круга**/
+	/**РІС‹С‡РёСЃР»РµРЅРёСЏ РґР»РёРЅС‹ Р±РѕР»СЊС€РѕРіРѕ РєСЂСѓРіР°**/
 	var y = Math.sqrt(Math.pow(cl2*sdelta,2)+Math.pow(cl1*sl2-sl1*cl2*cdelta,2))
 	var x = sl1*sl2+cl1*cl2*cdelta
 	var ad = Math.atan2(y,x)
@@ -1219,16 +1219,16 @@ function rastGrad(dot1,dot2){
 }
 
 /**
-* вычисление расстояния на сфере  в градусах
-* @param dot точкf, заданная массивом кооординат [lat,lng]
-* @param node узел графа, заданный как объект вида {node_id:node_id,lat:lat,lng:lng }
+* РІС‹С‡РёСЃР»РµРЅРёРµ СЂР°СЃСЃС‚РѕСЏРЅРёСЏ РЅР° СЃС„РµСЂРµ  РІ РіСЂР°РґСѓСЃР°С…
+* @param dot С‚РѕС‡Рєf, Р·Р°РґР°РЅРЅР°СЏ РјР°СЃСЃРёРІРѕРј РєРѕРѕРѕСЂРґРёРЅР°С‚ [lat,lng]
+* @param node СѓР·РµР» РіСЂР°С„Р°, Р·Р°РґР°РЅРЅС‹Р№ РєР°Рє РѕР±СЉРµРєС‚ РІРёРґР° {node_id:node_id,lat:lat,lng:lng }
 **/
 function rastGrad2(dot, node){
     return rastGrad(dot, [node.lat, node.lng]);
 }
 
 /**
-* возвращаем флаг готовности
+* РІРѕР·РІСЂР°С‰Р°РµРј С„Р»Р°Рі РіРѕС‚РѕРІРЅРѕСЃС‚Рё
 **/
 function getReady(){
 	return ready;
@@ -1236,18 +1236,18 @@ function getReady(){
 
 
 /**
-* заполнение массива id связанных узлов графа
-* @param index номер попытки
-* @param callback функция обратного вызова в которую передается результат в виде
-* массива id узлов [id1, id2,...]]
+* Р·Р°РїРѕР»РЅРµРЅРёРµ РјР°СЃСЃРёРІР° id СЃРІСЏР·Р°РЅРЅС‹С… СѓР·Р»РѕРІ РіСЂР°С„Р°
+* @param index РЅРѕРјРµСЂ РїРѕРїС‹С‚РєРё
+* @param callback С„СѓРЅРєС†РёСЏ РѕР±СЂР°С‚РЅРѕРіРѕ РІС‹Р·РѕРІР° РІ РєРѕС‚РѕСЂСѓСЋ РїРµСЂРµРґР°РµС‚СЃСЏ СЂРµР·СѓР»СЊС‚Р°С‚ РІ РІРёРґРµ
+* РјР°СЃСЃРёРІР° id СѓР·Р»РѕРІ [id1, id2,...]]
 **/
 function fillConnectedNodes(index, callback){
 	console.log('IN fillconnectedNodes');
-	var waveLabel = []; /**волновая метка**/
-	var T = 0;/**время**/
+	var waveLabel = []; /**РІРѕР»РЅРѕРІР°СЏ РјРµС‚РєР°**/
+	var T = 0;/**РІСЂРµРјСЏ**/
 	connectedNodes = [];
-	var oldFront = [];/**старый фронт**/
-	var newFront = [];/**новый фронт**/
+	var oldFront = [];/**СЃС‚Р°СЂС‹Р№ С„СЂРѕРЅС‚**/
+	var newFront = [];/**РЅРѕРІС‹Р№ С„СЂРѕРЅС‚**/
 	var curr = null;
 	var id = null;
 	for ( var i = 0; i < n; i++ ){
@@ -1279,7 +1279,7 @@ function fillConnectedNodes(index, callback){
 			}
 		}
 		if ( newFront.length == 0 ){
-			/*распостранение волны закончено*/
+			/*СЂР°СЃРїРѕСЃС‚СЂР°РЅРµРЅРёРµ РІРѕР»РЅС‹ Р·Р°РєРѕРЅС‡РµРЅРѕ*/
 			if ( connectedNodes.length >= n * CONNECTED_COFF ){
 				console.log('Found connected nodes: '+connectedNodes.length);
 				callback();
@@ -1296,8 +1296,8 @@ function fillConnectedNodes(index, callback){
 }
 
 /**
-* получение массива несвязных узлов 
-* @return массив узлов, не связанных с основной частью графа вида [{id:id,lat:lat,lng:lng},...]
+* РїРѕР»СѓС‡РµРЅРёРµ РјР°СЃСЃРёРІР° РЅРµСЃРІСЏР·РЅС‹С… СѓР·Р»РѕРІ 
+* @return РјР°СЃСЃРёРІ СѓР·Р»РѕРІ, РЅРµ СЃРІСЏР·Р°РЅРЅС‹С… СЃ РѕСЃРЅРѕРІРЅРѕР№ С‡Р°СЃС‚СЊСЋ РіСЂР°С„Р° РІРёРґР° [{id:id,lat:lat,lng:lng},...]
 **/
 function getNotConnectedNodes(){
 	var lostNodes = [];
@@ -1309,8 +1309,8 @@ function getNotConnectedNodes(){
 
 
 /**
-* получение массива несвязных узлов в виде массива координат
-* @return массив узлов, не связанных с основной частью графа вида [[lat1,lng1],[lat2,lng2],...]
+* РїРѕР»СѓС‡РµРЅРёРµ РјР°СЃСЃРёРІР° РЅРµСЃРІСЏР·РЅС‹С… СѓР·Р»РѕРІ РІ РІРёРґРµ РјР°СЃСЃРёРІР° РєРѕРѕСЂРґРёРЅР°С‚
+* @return РјР°СЃСЃРёРІ СѓР·Р»РѕРІ, РЅРµ СЃРІСЏР·Р°РЅРЅС‹С… СЃ РѕСЃРЅРѕРІРЅРѕР№ С‡Р°СЃС‚СЊСЋ РіСЂР°С„Р° РІРёРґР° [[lat1,lng1],[lat2,lng2],...]
 **/
 function getNotConnectedDots(){
 	var notConnectedDots = [];
@@ -1323,9 +1323,9 @@ function getNotConnectedDots(){
 }
 
 /**
-* получение массива несвязных путей в виде массива координат
-* @callback функция обратного вызова в которую передается
-* массив узлов, не связанных с основной частью графа вида [[[lat1,lng1],[lat2,lng2]],...]
+* РїРѕР»СѓС‡РµРЅРёРµ РјР°СЃСЃРёРІР° РЅРµСЃРІСЏР·РЅС‹С… РїСѓС‚РµР№ РІ РІРёРґРµ РјР°СЃСЃРёРІР° РєРѕРѕСЂРґРёРЅР°С‚
+* @callback С„СѓРЅРєС†РёСЏ РѕР±СЂР°С‚РЅРѕРіРѕ РІС‹Р·РѕРІР° РІ РєРѕС‚РѕСЂСѓСЋ РїРµСЂРµРґР°РµС‚СЃСЏ
+* РјР°СЃСЃРёРІ СѓР·Р»РѕРІ, РЅРµ СЃРІСЏР·Р°РЅРЅС‹С… СЃ РѕСЃРЅРѕРІРЅРѕР№ С‡Р°СЃС‚СЊСЋ РіСЂР°С„Р° РІРёРґР° [[[lat1,lng1],[lat2,lng2]],...]
 **/
 function getNotConnectedRoads(callback){
 	var notConnectedRoads = [];

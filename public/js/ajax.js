@@ -1,7 +1,7 @@
-/*отправка AJAX запроса нативным JS*/
+/*РѕС‚РїСЂР°РІРєР° AJAX Р·Р°РїСЂРѕСЃР° РЅР°С‚РёРІРЅС‹Рј JS*/
 var Ajax = 
 {
-    /*получение объекта XMLHttpRequest*/
+    /*РїРѕР»СѓС‡РµРЅРёРµ РѕР±СЉРµРєС‚Р° XMLHttpRequest*/
     getXMLHttp: function(){
         var xmlHttp
         try
@@ -25,8 +25,8 @@ var Ajax =
     },
 
     /**
-    * отправка запроса
-    * @param method метод запроса
+    * РѕС‚РїСЂР°РІРєР° Р·Р°РїСЂРѕСЃР°
+    * @param method РјРµС‚РѕРґ Р·Р°РїСЂРѕСЃР°
     * @param url
     * @param params
     * callback  

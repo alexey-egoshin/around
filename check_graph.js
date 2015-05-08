@@ -2,15 +2,15 @@ var sqlite = require('spatialite');
 var debug = require('./debug.js');
 var util = require('util');
 var fs = require('fs');
-var roads = []; /**массив дорог**/
-var nodes = [];/**массив узлов**/
-var index_from = []; /**индексные таблицы для ускорения поиска**/
+var roads = []; /**РјР°СЃСЃРёРІ РґРѕСЂРѕРі**/
+var nodes = [];/**РјР°СЃСЃРёРІ СѓР·Р»РѕРІ**/
+var index_from = []; /**РёРЅРґРµРєСЃРЅС‹Рµ С‚Р°Р±Р»РёС†С‹ РґР»СЏ СѓСЃРєРѕСЂРµРЅРёСЏ РїРѕРёСЃРєР°**/
 var index_size = []; 
-var n = 0; /**количество вершин графа**/
-var m = 0; /**количество дуг графа**/
-var INF = 999999999; /**большое число**/
-var margin = 0.6; /**коэффициент расширения для определения части графа для обсчета**/
-var margin2 = 2.0;/**коэффициент расширения для определения части графа для обсчета**/
+var n = 0; /**РєРѕР»РёС‡РµСЃС‚РІРѕ РІРµСЂС€РёРЅ РіСЂР°С„Р°**/
+var m = 0; /**РєРѕР»РёС‡РµСЃС‚РІРѕ РґСѓРі РіСЂР°С„Р°**/
+var INF = 999999999; /**Р±РѕР»СЊС€РѕРµ С‡РёСЃР»Рѕ**/
+var margin = 0.6; /**РєРѕСЌС„С„РёС†РёРµРЅС‚ СЂР°СЃС€РёСЂРµРЅРёСЏ РґР»СЏ РѕРїСЂРµРґРµР»РµРЅРёСЏ С‡Р°СЃС‚Рё РіСЂР°С„Р° РґР»СЏ РѕР±СЃС‡РµС‚Р°**/
+var margin2 = 2.0;/**РєРѕСЌС„С„РёС†РёРµРЅС‚ СЂР°СЃС€РёСЂРµРЅРёСЏ РґР»СЏ РѕРїСЂРµРґРµР»РµРЅРёСЏ С‡Р°СЃС‚Рё РіСЂР°С„Р° РґР»СЏ РѕР±СЃС‡РµС‚Р°**/
 var report_file = 'check_graph.txt';
 
 var argv = process.argv;
@@ -21,9 +21,9 @@ if (argv[2] == null){
 var db = new sqlite.Database(argv[2]);
 
 /**
-* получение дорог из базы в виде массива объектов и запись в массив roads + заполнение индексных массивов
-* @param callback функция обратного вызова
-* roads - массив объектов вида {node_from:node_from,node_to:node_to,name:name,cost:cost,length:length,lat_from:lat_from,lng_from:lng_from,lat_to:lat_to,lng_to:lng_to}
+* РїРѕР»СѓС‡РµРЅРёРµ РґРѕСЂРѕРі РёР· Р±Р°Р·С‹ РІ РІРёРґРµ РјР°СЃСЃРёРІР° РѕР±СЉРµРєС‚РѕРІ Рё Р·Р°РїРёСЃСЊ РІ РјР°СЃСЃРёРІ roads + Р·Р°РїРѕР»РЅРµРЅРёРµ РёРЅРґРµРєСЃРЅС‹С… РјР°СЃСЃРёРІРѕРІ
+* @param callback С„СѓРЅРєС†РёСЏ РѕР±СЂР°С‚РЅРѕРіРѕ РІС‹Р·РѕРІР°
+* roads - РјР°СЃСЃРёРІ РѕР±СЉРµРєС‚РѕРІ РІРёРґР° {node_from:node_from,node_to:node_to,name:name,cost:cost,length:length,lat_from:lat_from,lng_from:lng_from,lat_to:lat_to,lng_to:lng_to}
 **/
 function loadRoads(callback){
 	var sql = "SELECT node_from, node_to, name, cost, length, Y(rn.geometry) "; 
@@ -37,7 +37,7 @@ function loadRoads(callback){
 		db.all(sql, function(err, rows) {
 			if ( rows != undefined ){
 				if ( rows != null ){
-					//записываем в массив
+					//Р·Р°РїРёСЃС‹РІР°РµРј РІ РјР°СЃСЃРёРІ
 					var geom = null;
 					for ( var i = 0; i < rows.length; i++ ){
 						roads.push(rows[i]);
@@ -46,14 +46,14 @@ function loadRoads(callback){
 						roads.push({node_from:rows[i].node_to, node_to:rows[i].node_from,cost:rows[i].cost,length:rows[i].length,geometry:JSON.stringify(geom)});
 					}
 					m = roads.length;
-					//сортируем
+					//СЃРѕСЂС‚РёСЂСѓРµРј
 					roads.sort(function(x,y){ return x.node_from-y.node_from});
 					
 					var curr_from = 0;
 					var prev_from = 0;
 					for ( var i = 0; i < m; prev_from = curr_from,i++ ){
 						curr_from = roads[i].node_from;
-						if ( curr_from != prev_from ){ //если from новый записываем его начальный индекс в index_from
+						if ( curr_from != prev_from ){ //РµСЃР»Рё from РЅРѕРІС‹Р№ Р·Р°РїРёСЃС‹РІР°РµРј РµРіРѕ РЅР°С‡Р°Р»СЊРЅС‹Р№ РёРЅРґРµРєСЃ РІ index_from
 							if ( curr_from - 1 > index_from.length ){
 								for ( var j = 0; j < (curr_from - 1 - index_from.length); j++ ){
 									index_from.push(-1);
@@ -62,7 +62,7 @@ function loadRoads(callback){
 							}
 							index_from.push(i);
 							index_size.push(1);
-						}else{ //если from старый увеличиваем последний index_size
+						}else{ //РµСЃР»Рё from СЃС‚Р°СЂС‹Р№ СѓРІРµР»РёС‡РёРІР°РµРј РїРѕСЃР»РµРґРЅРёР№ index_size
 							index_size[index_size.length-1]++;
 						}
 					}			
@@ -74,9 +74,9 @@ function loadRoads(callback){
 }
 
 /**
-* получение узлов графа из базы в виде массива объектов и запись в массив nodes
-* @param callback функция обратного вызова
-* nodes - массив объектов вида {node_id:node_id,cardinality:cardinality,lat:lat,lng:lng}
+* РїРѕР»СѓС‡РµРЅРёРµ СѓР·Р»РѕРІ РіСЂР°С„Р° РёР· Р±Р°Р·С‹ РІ РІРёРґРµ РјР°СЃСЃРёРІР° РѕР±СЉРµРєС‚РѕРІ Рё Р·Р°РїРёСЃСЊ РІ РјР°СЃСЃРёРІ nodes
+* @param callback С„СѓРЅРєС†РёСЏ РѕР±СЂР°С‚РЅРѕРіРѕ РІС‹Р·РѕРІР°
+* nodes - РјР°СЃСЃРёРІ РѕР±СЉРµРєС‚РѕРІ РІРёРґР° {node_id:node_id,cardinality:cardinality,lat:lat,lng:lng}
 **/
 function loadNodes(callback){
 	var sql = "SELECT node_id, cardinality, Y(geometry) AS lat, X(geometry) AS lng FROM roads_nodes"; 
@@ -96,7 +96,7 @@ function loadNodes(callback){
 }
 
 /**
-* получение стоимости дуги графа из узла from в узел to
+* РїРѕР»СѓС‡РµРЅРёРµ СЃС‚РѕРёРјРѕСЃС‚Рё РґСѓРіРё РіСЂР°С„Р° РёР· СѓР·Р»Р° from РІ СѓР·РµР» to
 **/
 function getCost(from,to,banned){
 	if (from == to ) return 0;
@@ -113,7 +113,7 @@ function getCost(from,to,banned){
 }
 
 /**
-* получение геометрии ( как массива точек ) дуги графа из узла from в узел to
+* РїРѕР»СѓС‡РµРЅРёРµ РіРµРѕРјРµС‚СЂРёРё ( РєР°Рє РјР°СЃСЃРёРІР° С‚РѕС‡РµРє ) РґСѓРіРё РіСЂР°С„Р° РёР· СѓР·Р»Р° from РІ СѓР·РµР» to
 **/
 function getCoordinates(from,to){
 	var geom = null;
@@ -129,7 +129,7 @@ function getCoordinates(from,to){
 }
 
 /**
-* получение id узлов инцидентных данному
+* РїРѕР»СѓС‡РµРЅРёРµ id СѓР·Р»РѕРІ РёРЅС†РёРґРµРЅС‚РЅС‹С… РґР°РЅРЅРѕРјСѓ
 **/
 function getIncident(curr){
 	var incident = [];
@@ -141,9 +141,9 @@ function getIncident(curr){
 }
 
 /**
-* загрузка данных из базы
-* инициализация начальных значений переменных
-* @param функция обратного вызова
+* Р·Р°РіСЂСѓР·РєР° РґР°РЅРЅС‹С… РёР· Р±Р°Р·С‹
+* РёРЅРёС†РёР°Р»РёР·Р°С†РёСЏ РЅР°С‡Р°Р»СЊРЅС‹С… Р·РЅР°С‡РµРЅРёР№ РїРµСЂРµРјРµРЅРЅС‹С…
+* @param С„СѓРЅРєС†РёСЏ РѕР±СЂР°С‚РЅРѕРіРѕ РІС‹Р·РѕРІР°
 **/
 function init(callback){
 	console.log('load graph...');
@@ -156,16 +156,16 @@ function init(callback){
 
 
 /**
-* определение маршрута методом обхода в ширину
-* @param from начальная точка
-* @param to конечная точка
-* @param callback функция обратного вызова в которую передается результат в виде
-* массива точек [[lat1, lng1], [lat2,lng2],...]]
+* РѕРїСЂРµРґРµР»РµРЅРёРµ РјР°СЂС€СЂСѓС‚Р° РјРµС‚РѕРґРѕРј РѕР±С…РѕРґР° РІ С€РёСЂРёРЅСѓ
+* @param from РЅР°С‡Р°Р»СЊРЅР°СЏ С‚РѕС‡РєР°
+* @param to РєРѕРЅРµС‡РЅР°СЏ С‚РѕС‡РєР°
+* @param callback С„СѓРЅРєС†РёСЏ РѕР±СЂР°С‚РЅРѕРіРѕ РІС‹Р·РѕРІР° РІ РєРѕС‚РѕСЂСѓСЋ РїРµСЂРµРґР°РµС‚СЃСЏ СЂРµР·СѓР»СЊС‚Р°С‚ РІ РІРёРґРµ
+* РјР°СЃСЃРёРІР° С‚РѕС‡РµРє [[lat1, lng1], [lat2,lng2],...]]
 **/
 function bypassingWide(from, to, callback){
-	var queue = []; /**очередь**/
-	var used = []; /**посещенные вершины**/
-	var prev = []; /**предки вершин**/
+	var queue = []; /**РѕС‡РµСЂРµРґСЊ**/
+	var used = []; /**РїРѕСЃРµС‰РµРЅРЅС‹Рµ РІРµСЂС€РёРЅС‹**/
+	var prev = []; /**РїСЂРµРґРєРё РІРµСЂС€РёРЅ**/
 	for ( var i = 0; i < n; i++ ){
 		used[i] = false;
 		prev[i] = 0;
@@ -194,7 +194,7 @@ function bypassingWide(from, to, callback){
 		callback([]);
 		return false;
 	}
-	//вывод результатов
+	//РІС‹РІРѕРґ СЂРµР·СѓР»СЊС‚Р°С‚РѕРІ
 	var path = [];
 	path.push(end);
 	curr = end;
@@ -208,18 +208,18 @@ function bypassingWide(from, to, callback){
 }
 
 /**
-* определение маршрута волновым алгоритмом
-* @param from начальная точка
-* @param to конечная точка
-* @param callback функция обратного вызова в которую передается результат в виде
-* массива точек [[lat1, lng1], [lat2,lng2],...]]
+* РѕРїСЂРµРґРµР»РµРЅРёРµ РјР°СЂС€СЂСѓС‚Р° РІРѕР»РЅРѕРІС‹Рј Р°Р»РіРѕСЂРёС‚РјРѕРј
+* @param from РЅР°С‡Р°Р»СЊРЅР°СЏ С‚РѕС‡РєР°
+* @param to РєРѕРЅРµС‡РЅР°СЏ С‚РѕС‡РєР°
+* @param callback С„СѓРЅРєС†РёСЏ РѕР±СЂР°С‚РЅРѕРіРѕ РІС‹Р·РѕРІР° РІ РєРѕС‚РѕСЂСѓСЋ РїРµСЂРµРґР°РµС‚СЃСЏ СЂРµР·СѓР»СЊС‚Р°С‚ РІ РІРёРґРµ
+* РјР°СЃСЃРёРІР° С‚РѕС‡РµРє [[lat1, lng1], [lat2,lng2],...]]
 **/
 function routeWave(from, to, callback){
-	var waveLabel = []; /**волновая метка**/
-	var T = 0;/**время**/
-	var oldFront = [];/**старый фронт**/
-	var newFront = [];/**новый фронт**/
-	var prev = []; /**предки вершин**/
+	var waveLabel = []; /**РІРѕР»РЅРѕРІР°СЏ РјРµС‚РєР°**/
+	var T = 0;/**РІСЂРµРјСЏ**/
+	var oldFront = [];/**СЃС‚Р°СЂС‹Р№ С„СЂРѕРЅС‚**/
+	var newFront = [];/**РЅРѕРІС‹Р№ С„СЂРѕРЅС‚**/
+	var prev = []; /**РїСЂРµРґРєРё РІРµСЂС€РёРЅ**/
 	var curr = null;
 	var id = null;
 	for ( var i = 0; i < n; i++ ){
@@ -247,8 +247,8 @@ function routeWave(from, to, callback){
 				}
 				
 				if ( id == end ){
-					//решение найдено
-					//вывод результатов
+					//СЂРµС€РµРЅРёРµ РЅР°Р№РґРµРЅРѕ
+					//РІС‹РІРѕРґ СЂРµР·СѓР»СЊС‚Р°С‚РѕРІ
 					var path = [];
 					path.push(end);
 					curr = end;
@@ -285,7 +285,7 @@ function findEmptyNodes(){
 			if ( roads[j].node_to == nodes[i].node_id || roads[j].node_from == nodes[i].node_id ) hasCurve = true;
 		}
 		if ( !hasCurve ) empty.push(nodes[i].node_id);
-		/**вывод прогресса**/
+		/**РІС‹РІРѕРґ РїСЂРѕРіСЂРµСЃСЃР°**/
 		for ( var k = 0; k < lastOutputLen; k++ ){
 			util.print('\b');
 		}
@@ -309,7 +309,7 @@ function findEmptyNodes2(){
 		size = index_size[i];
 		
 		if ( indexCurve == -1 && size == 0 ) empty.push(nodes[i].node_id);
-		/**вывод прогресса**/
+		/**РІС‹РІРѕРґ РїСЂРѕРіСЂРµСЃСЃР°**/
 		for ( var k = 0; k < lastOutputLen; k++ ){
 			util.print('\b');
 		}

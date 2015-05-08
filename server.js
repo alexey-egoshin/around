@@ -14,7 +14,7 @@ server.listen(port,function(){
 
 app.use(express.static(__dirname+'/public'));
 
-/*основной маршрут*/
+/*РѕСЃРЅРѕРІРЅРѕР№ РјР°СЂС€СЂСѓС‚*/
 app.get('/',function(req,res){
     console.log('/ was called');
 	res.sendFile(__dirname+'/index.html');
@@ -31,7 +31,7 @@ app.get('/init', function(req, res){
 });
 
 
-/*маршрут для GET запроса маршрута от модуля OSRM*/
+/*РјР°СЂС€СЂСѓС‚ РґР»СЏ GET Р·Р°РїСЂРѕСЃР° РјР°СЂС€СЂСѓС‚Р° РѕС‚ РјРѕРґСѓР»СЏ OSRM*/
 app.get('/routeosrm',function(req,res){
 	var data = JSON.parse(req.query.data);
 	var source = data[0];
@@ -46,7 +46,7 @@ app.get('/routeosrm',function(req,res){
 	});
 });
 
-/*маршрут для GET запроса маршрута от модуля spatialite через запрос к базе*/
+/*РјР°СЂС€СЂСѓС‚ РґР»СЏ GET Р·Р°РїСЂРѕСЃР° РјР°СЂС€СЂСѓС‚Р° РѕС‚ РјРѕРґСѓР»СЏ spatialite С‡РµСЂРµР· Р·Р°РїСЂРѕСЃ Рє Р±Р°Р·Рµ*/
 app.get('/routequery',function(req,res){
 	var data = JSON.parse(req.query.data);
 	var source = data[0];
@@ -61,7 +61,7 @@ app.get('/routequery',function(req,res){
      
 });
 
-/*маршрут для GET запроса маршрута от модуля spatialite через routeDijkstra3*/
+/*РјР°СЂС€СЂСѓС‚ РґР»СЏ GET Р·Р°РїСЂРѕСЃР° РјР°СЂС€СЂСѓС‚Р° РѕС‚ РјРѕРґСѓР»СЏ spatialite С‡РµСЂРµР· routeDijkstra3*/
 app.get('/routedijkstra3',function(req,res){
 	var data = JSON.parse(req.query.data);
 	var source = data[0];
@@ -76,7 +76,7 @@ app.get('/routedijkstra3',function(req,res){
      
 });
 
-/*маршрут для GET запроса маршрута от модуля spatialite через routeDijkstra*/
+/*РјР°СЂС€СЂСѓС‚ РґР»СЏ GET Р·Р°РїСЂРѕСЃР° РјР°СЂС€СЂСѓС‚Р° РѕС‚ РјРѕРґСѓР»СЏ spatialite С‡РµСЂРµР· routeDijkstra*/
 app.get('/routedijkstra',function(req,res){
 	var data = JSON.parse(req.query.data);
 	var source = data[0];
@@ -92,7 +92,7 @@ app.get('/routedijkstra',function(req,res){
 });
 
 
-/*маршрут для GET запроса маршрута от модуля spatialite через routeDijkstraEnemy*/
+/*РјР°СЂС€СЂСѓС‚ РґР»СЏ GET Р·Р°РїСЂРѕСЃР° РјР°СЂС€СЂСѓС‚Р° РѕС‚ РјРѕРґСѓР»СЏ spatialite С‡РµСЂРµР· routeDijkstraEnemy*/
 app.get('/routedijkstraenemy',function(req,res){
 	var data = JSON.parse(req.query.data);
 	var enemy = JSON.parse(req.query.enemy);
@@ -108,7 +108,7 @@ app.get('/routedijkstraenemy',function(req,res){
      
 });
 
-/*маршрут для GET запроса маршрута от модуля spatialite через bypassingWide*/
+/*РјР°СЂС€СЂСѓС‚ РґР»СЏ GET Р·Р°РїСЂРѕСЃР° РјР°СЂС€СЂСѓС‚Р° РѕС‚ РјРѕРґСѓР»СЏ spatialite С‡РµСЂРµР· bypassingWide*/
 app.get('/routebypassingwide',function(req,res){
 	var data = JSON.parse(req.query.data);
 	var source = data[0];
@@ -123,7 +123,7 @@ app.get('/routebypassingwide',function(req,res){
      
 });
 
-/*маршрут для GET запроса маршрута от модуля spatialite через bypassingWideEnemy*/
+/*РјР°СЂС€СЂСѓС‚ РґР»СЏ GET Р·Р°РїСЂРѕСЃР° РјР°СЂС€СЂСѓС‚Р° РѕС‚ РјРѕРґСѓР»СЏ spatialite С‡РµСЂРµР· bypassingWideEnemy*/
 app.get('/routebypassingwideenemy',function(req,res){
 	var data = JSON.parse(req.query.data);
 	var enemy = JSON.parse(req.query.enemy);
@@ -139,7 +139,7 @@ app.get('/routebypassingwideenemy',function(req,res){
      
 });
 
-/*маршрут для GET запроса маршрута от модуля spatialite через routeWave*/
+/*РјР°СЂС€СЂСѓС‚ РґР»СЏ GET Р·Р°РїСЂРѕСЃР° РјР°СЂС€СЂСѓС‚Р° РѕС‚ РјРѕРґСѓР»СЏ spatialite С‡РµСЂРµР· routeWave*/
 app.get('/routewave',function(req,res){
 	var data = JSON.parse(req.query.data);
 	var source = data[0];
@@ -154,7 +154,7 @@ app.get('/routewave',function(req,res){
      
 });
 
-/*маршрут для GET запроса маршрута от модуля spatialite через routeWaveEnemy*/
+/*РјР°СЂС€СЂСѓС‚ РґР»СЏ GET Р·Р°РїСЂРѕСЃР° РјР°СЂС€СЂСѓС‚Р° РѕС‚ РјРѕРґСѓР»СЏ spatialite С‡РµСЂРµР· routeWaveEnemy*/
 app.get('/routewaveenemy',function(req,res){
 	var data = JSON.parse(req.query.data);
 	var enemy = JSON.parse(req.query.enemy);
@@ -170,7 +170,7 @@ app.get('/routewaveenemy',function(req,res){
      
 });
 
-/*маршрут для GET запроса маршрута от модуля spatialite через findRouteTobase*/
+/*РјР°СЂС€СЂСѓС‚ РґР»СЏ GET Р·Р°РїСЂРѕСЃР° РјР°СЂС€СЂСѓС‚Р° РѕС‚ РјРѕРґСѓР»СЏ spatialite С‡РµСЂРµР· findRouteTobase*/
 app.get('/findroutetobase',function(req,res){
 	var data = JSON.parse(req.query.data);
 	var enemy = JSON.parse(req.query.enemy);
@@ -186,7 +186,7 @@ app.get('/findroutetobase',function(req,res){
      
 });
 
-/*маршрут для GET запроса всех путей от модуля spatialite*/
+/*РјР°СЂС€СЂСѓС‚ РґР»СЏ GET Р·Р°РїСЂРѕСЃР° РІСЃРµС… РїСѓС‚РµР№ РѕС‚ РјРѕРґСѓР»СЏ spatialite*/
 app.get('/allroads',function(req,res){
 	spatialite.getAllRoads(function(roads){
 		res.writeHead(200, {"Content-Type": "text/html","Access-Control-Allow-Origin": "*"});
@@ -196,7 +196,7 @@ app.get('/allroads',function(req,res){
 	   
 })
 
-/*маршрут для GET запроса всех узлов от spatialite*/
+/*РјР°СЂС€СЂСѓС‚ РґР»СЏ GET Р·Р°РїСЂРѕСЃР° РІСЃРµС… СѓР·Р»РѕРІ РѕС‚ spatialite*/
 app.get('/allnodes',function(req,res){
 	spatialite.getAllNodes(function(nodes){
 		res.writeHead(200, {"Content-Type": "text/html","Access-Control-Allow-Origin": "*"});
@@ -206,7 +206,7 @@ app.get('/allnodes',function(req,res){
      
 })
 
-/*маршрут для GET запроса запрещенных узлов от spatialite*/
+/*РјР°СЂС€СЂСѓС‚ РґР»СЏ GET Р·Р°РїСЂРѕСЃР° Р·Р°РїСЂРµС‰РµРЅРЅС‹С… СѓР·Р»РѕРІ РѕС‚ spatialite*/
 app.get('/restricted',function(req,res){
 	var data = JSON.parse(req.query.data);
 	spatialite.getRestirctedNodes(data, function(nodes){
@@ -217,7 +217,7 @@ app.get('/restricted',function(req,res){
      
 })
 
-/*маршрут для GET запроса несвязных путей*/
+/*РјР°СЂС€СЂСѓС‚ РґР»СЏ GET Р·Р°РїСЂРѕСЃР° РЅРµСЃРІСЏР·РЅС‹С… РїСѓС‚РµР№*/
 app.get('/findnotconnected',function(req,res){
 	var data = JSON.parse(req.query.data);
 	var start = data[0];
