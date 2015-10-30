@@ -20,26 +20,29 @@ var Route =
             Route.getRouteGoogle(start,end,callback);
         }else if ( Route.service == 'spatialite_query'  ){
             Route.getRouteSpatialiteQuery(start,end,callback);
-        }else if ( Route.service == 'osrm' ){
+	}
+	else if(Route.service == 'spatialite_query_db_only' ){
+	    Route.getRouteSpatialiteQueryDbOnly(start,end,callback);
+	}else if ( Route.service == 'osrm' ){
             Route.getRouteOSRM(start,end,callback);
         }else if ( Route.service == 'spatialite_dijkstra' ){
             Route.getRouteSpatialiteDijkstra(start,end,callback);
         }else if ( Route.service == 'spatialite_dijkstra3' ){
             Route.getRouteSpatialiteDijkstra3(start,end,callback);
         }else if( Route.service == 'spatialite_dijkstra_enemy' ){
-			Route.getRouteSpatialiteDijkstraEnemy(start,end,enemies,callback);
-		}else if( Route.service == 'spatialite_routebypassingwide' ){
-			Route.getRouteSpatialitebypassingWide(start,end,callback);
-		}else if( Route.service == 'spatialite_routewave' ){
-			Route.getRouteSpatialiterouteWave(start,end,callback);
-		}else if( Route.service == 'spatialite_routebypassingwideenemy' ){
-			Route.getRouteSpatialitebypassingWideEnemy(start,end,enemies,callback);
-		}else if( Route.service == 'spatialite_routewaveenemy' ){
-			Route.getRouteSpatialiterouteWaveEnemy(start,end,enemies,callback);
-		}else if( Route.service == 'spatialite_findroutetobase' ){
-			Route.getRouteSpatialiteFindRouteToBase(start,end,enemies,callback);
-		}
-		else{
+		Route.getRouteSpatialiteDijkstraEnemy(start,end,enemies,callback);
+	}else if( Route.service == 'spatialite_routebypassingwide' ){
+		Route.getRouteSpatialitebypassingWide(start,end,callback);
+	}else if( Route.service == 'spatialite_routewave' ){
+		Route.getRouteSpatialiterouteWave(start,end,callback);
+	}else if( Route.service == 'spatialite_routebypassingwideenemy' ){
+		Route.getRouteSpatialitebypassingWideEnemy(start,end,enemies,callback);
+	}else if( Route.service == 'spatialite_routewaveenemy' ){
+		Route.getRouteSpatialiterouteWaveEnemy(start,end,enemies,callback);
+	}else if( Route.service == 'spatialite_findroutetobase' ){
+		Route.getRouteSpatialiteFindRouteToBase(start,end,enemies,callback);
+	}
+	else{
             Route.getRouteSpatialiteQuery(start,end,callback);
         }
     },
@@ -49,11 +52,12 @@ var Route =
     * @param callback объект в который передается маршрут в виде массива точек и объект полка
     **/
 	getRouteGoogle: function(start,end,callback){
-		var start = new google.maps.LatLng(start.lat, start.lng);
-		var end = new google.maps.LatLng(end.lat, end.lng);
+		console.log(JSON.stringify(start)+":"+JSON.stringify(end));
+		var from = new google.maps.LatLng(start.lat, start.lng);
+		var to = new google.maps.LatLng(end.lat, end.lng);
 		var request = {
-					  origin: start,
-					  destination: end,
+					  origin: from,
+					  destination: to,
 					  //задание путевой точки
 					  //waypoints: [{location: new google.maps.LatLng(56.64,47.82 ), stopover: false}],
 					  travelMode: google.maps.TravelMode.DRIVING
@@ -61,13 +65,18 @@ var Route =
 		Route.directionsService.route(request, function(response, status) {
 			if (status == google.maps.DirectionsStatus.OK) {
 				var points = response.routes[0].overview_path;
+				console.log(JSON.stringify(response));
+                var liters = [];
+                for ( var key in points[0]){
+                    liters.push(key);
+                    if (liters.length >1 ) break;  
+                }
+                console.log(liters);
                 var route = [];
-    			console.log(JSON.stringify(points));
-				for ( var i = 0; i < points.length; i++ ){
-    				route.push([points[i]['k'],points[i]['D']]);
+    			for ( var i = 0; i < points.length; i++ ){
+    				route.push([points[i][liters[0]],points[i][liters[1]]]);
     			}
-                //console.log(route);
-				callback(route);
+                callback(route);
 			}
 		});
 	},
@@ -101,6 +110,24 @@ var Route =
 		var params = 'data=' + JSON.stringify([start,end]);
 		console.log(params);
 		Ajax.sendRequest('GET', '/routequery', params, function(route) {
+			//console.log(JSON.stringify(route));
+            callback(route);
+		});
+	},
+	
+	
+    /**
+    * получение маршрута от модуля Spatialite метод routeQueryDbOnly с определение id узлов через запрос к базе
+    * @param start, end точки начала и конца пути, представленные как массивы [lat,lng]
+    * @param callback функция обратного вызова в которую передается маршрут и объект полка
+    **/
+    
+    getRouteSpatialiteQueryDbOnly: function(start,end,callback){
+		var start = [start.lat, start.lng];
+		var end = [end.lat, end.lng];
+		var params = 'data=' + JSON.stringify([start,end]);
+		console.log(params);
+		Ajax.sendRequest('GET', '/routequery_db_only', params, function(route) {
 			//console.log(JSON.stringify(route));
             callback(route);
 		});

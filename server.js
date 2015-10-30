@@ -61,6 +61,22 @@ app.get('/routequery',function(req,res){
      
 });
 
+
+/*маршрут для GET запроса маршрута от модуля spatialite через запрос к базе с определение id узлов через запрос к базе*/
+app.get('/routequery_db_only',function(req,res){
+	var data = JSON.parse(req.query.data);
+	var source = data[0];
+	var target = data[1];
+	time.start();
+	spatialite.routeQueryDbOnly(source, target, function(route){
+		console.log('Executing time: '+time.stop());
+		res.writeHead(200, {"Content-Type": "text/html","Access-Control-Allow-Origin": "*"});
+		res.write(JSON.stringify(route));
+		res.end();
+	});
+     
+});
+
 /*маршрут для GET запроса маршрута от модуля spatialite через routeDijkstra3*/
 app.get('/routedijkstra3',function(req,res){
 	var data = JSON.parse(req.query.data);

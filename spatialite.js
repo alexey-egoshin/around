@@ -209,6 +209,8 @@ function clear(){
     m = 0;
     ready = false;
 }
+
+
 /**
 * определение маршрута запросом к базе
 * @param from начальная точка
@@ -240,6 +242,48 @@ function routeQuery(from, to, callback){
 		});
 	});
 }
+
+
+/**
+* определение маршрута запросом к базе c определение узлов графа тоже запросом к базе
+* @param from начальная точка
+* @param to конечная точка
+* @param callback функция обратного вызова в которую передается результат в виде
+* массива точек [[lat1, lng1], [lat2,lng2],...]]
+**/
+
+function routeQueryDbOnly(from, to, callback){
+	latlng2node_id_from_db(from, function(start){
+	     latlng2node_id_from_db(to, function(end){
+		console.log(start+':'+end);
+		var sql = "SELECT AsGeoJSON(geometry) AS geometry FROM roads_net WHERE ";
+		sql += "NodeFrom=" + start + " AND NodeTo=" + end; 
+		sql += " LIMIT 1;"
+	    //console.log(sql);
+		db.spatialite(function(err) {
+			db.get(sql, function(err, row) {
+		    //console.log(JSON.stringify(row));
+		    route = [];
+				if ( row != undefined ){
+					if ( row.geometry != null ){
+						var obj = JSON.parse(row.geometry);
+						route = obj.coordinates;
+					}
+				}
+				//console.log(JSON.stringify(reverse(route)));
+			  callback(reverse(route));
+			});
+		});
+	    });
+	  
+	});
+    
+}
+
+
+
+
+
 
 /**
 * определение маршрута по алгоритму Дейкстры
@@ -1045,6 +1089,27 @@ function latlng2node_id(dot){
 }
 
 /**
+* получение id узла по координатам методом запроса из базы
+* @param dot массив координат [lat,lng]
+* @return id узла 
+**/
+function latlng2node_id_from_db(dot, callback){
+	var sql = "select node_id, MIN(Pow(("+dot[1]+"-X(geometry)),2) +Pow(("+dot[0]+"-Y(geometry)),2)) as rast from roads_nodes";
+	db.spatialite(function(err) {
+		db.get(sql, function(err, row) {
+            //console.log(JSON.stringify(row));
+			if ( row != undefined ){
+				if ( row.node_id != null ){
+					var node_id = row.node_id;
+				}
+			}
+			
+            callback(node_id);
+		});
+	});
+}
+
+/**
 * получение id узла по координатам в усеченном графе
 * @param dot массив координат [lat,lng]
 * @return id узла 
@@ -1360,3 +1425,4 @@ exports.routeWaveEnemy = routeWaveEnemy;
 exports.findRouteToBase = findRouteToBase;
 exports.getReady = getReady;
 exports.getNotConnectedRoads = getNotConnectedRoads;
+exports.routeQueryDbOnly = routeQueryDbOnly;
