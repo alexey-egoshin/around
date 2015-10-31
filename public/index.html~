@@ -26,8 +26,6 @@
 				<option value="osrm" >OSRM</option>
 				<option selected="selected" value="spatialite_query" >Spatialite</option>
 				<option value="spatialite_query_db_only" >Spatialite DB Only</option>
-				<option value="spatialite_php" >Spatialite PHP</option>
-				<option value="spatialite_python" >Spatialite Python</option>
 				<option value="spatialite_dijkstra" >Dijkstra</option>
 				<option value="spatialite_dijkstra3" >Dijkstra3</option>
 				<option value="spatialite_dijkstra_enemy" >Dijkstra Enemy</option>

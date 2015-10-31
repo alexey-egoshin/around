@@ -1,6 +1,6 @@
 window.onload = function(){
     
-	var selectService = document.getElementById('service');
+	selectService = document.getElementById('service');
 	Route.service = selectService.value;
 	selectService.onchange = function(){
 		Route.service = selectService.value;
@@ -9,7 +9,7 @@ window.onload = function(){
 		}
 	};
 	
-	var selectRegion = document.getElementById('region');
+	selectRegion = document.getElementById('region');
 	initSpatialite(selectRegion.value);
 	selectRegion.onchange = function(){
 		initSpatialite(selectRegion.value);

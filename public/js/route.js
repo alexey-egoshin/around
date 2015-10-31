@@ -20,9 +20,12 @@ var Route =
             Route.getRouteGoogle(start,end,callback);
         }else if ( Route.service == 'spatialite_query'  ){
             Route.getRouteSpatialiteQuery(start,end,callback);
-	}
-	else if(Route.service == 'spatialite_query_db_only' ){
+	}else if(Route.service == 'spatialite_query_db_only' ){
 	    Route.getRouteSpatialiteQueryDbOnly(start,end,callback);
+	}else if(Route.service == 'spatialite_php' ){
+	    Route.getRouteSpatialitePHP(start,end,callback);
+	}else if(Route.service == 'spatialite_python' ){
+	    Route.getRouteSpatialitePython(start,end,callback);
 	}else if ( Route.service == 'osrm' ){
             Route.getRouteOSRM(start,end,callback);
         }else if ( Route.service == 'spatialite_dijkstra' ){
@@ -52,7 +55,7 @@ var Route =
     * @param callback объект в который передается маршрут в виде массива точек и объект полка
     **/
 	getRouteGoogle: function(start,end,callback){
-		console.log(JSON.stringify(start)+":"+JSON.stringify(end));
+		//console.log(JSON.stringify(start)+":"+JSON.stringify(end));
 		var from = new google.maps.LatLng(start.lat, start.lng);
 		var to = new google.maps.LatLng(end.lat, end.lng);
 		var request = {
@@ -130,6 +133,38 @@ var Route =
 		Ajax.sendRequest('GET', '/routequery_db_only', params, function(route) {
 			//console.log(JSON.stringify(route));
             callback(route);
+		});
+	},
+	
+    /**
+    * получение маршрута от сервиса Spatialite на PHP с определение id узлов через запрос к базе
+    * @param start, end точки начала и конца пути, представленные как массивы [lat,lng]
+    * @param callback функция обратного вызова в которую передается маршрут и объект полка
+    **/
+    
+    getRouteSpatialitePHP: function(start,end,callback){
+		var db_file = selectRegion.value;
+		var params = 'data=' + [start.lat,start.lng,end.lat,end.lng,db_file].join(',');
+		console.log(params);
+		Ajax.sendRequest('GET', 'http://php_spa.loc/srv2.php', params, function(res) {
+			//console.log(res.coordinates);
+            callback(Route.reverse(res.coordinates));
+		});
+	},
+	
+    /**
+    * получение маршрута от сервиса Spatialite на Python с определение id узлов через запрос к базе
+    * @param start, end точки начала и конца пути, представленные как массивы [lat,lng]
+    * @param callback функция обратного вызова в которую передается маршрут и объект полка
+    **/
+    
+    getRouteSpatialitePython: function(start,end,callback){
+		var db_file = selectRegion.value;
+		var params = 'data=' + [start.lat,start.lng,end.lat,end.lng,db_file].join(',');
+		console.log(params);
+		Ajax.sendRequest('GET', 'http://py_spa.loc/myapp', params, function(res) {
+			console.log(res.coordinates);
+            callback(Route.reverse(res.coordinates));
 		});
 	},
     
@@ -292,6 +327,18 @@ var Route =
 			//console.log(JSON.stringify(result));
             callback(result);
 		});
+	},
+	
+	/**
+	* меняем местами широту и долготу в массиве точек
+	**/
+	reverse: function(route){
+	    var reverse_route = [];
+	    for (var i = 0; i < route.length; i++){
+		var dot = [route[i][1], route[i][0]];
+		reverse_route.push(dot);
+	    }
+	    return reverse_route;
 	}
     
 }
