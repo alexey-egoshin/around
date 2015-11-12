@@ -1,6 +1,6 @@
 window.onload = function(){
     
-	selectService = document.getElementById('service');
+	var selectService = document.getElementById('service');
 	Route.service = selectService.value;
 	selectService.onchange = function(){
 		Route.service = selectService.value;

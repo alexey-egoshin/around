@@ -220,6 +220,7 @@ function clear(){
 **/
 
 function routeQuery(from, to, callback){
+	console.log(from)
 	var start = latlng2node_id(from);
     var end = latlng2node_id(to);
 	console.log(start+':'+end);
@@ -1382,6 +1383,7 @@ function getNotConnectedDots(){
 	for ( var i = 0; i < n; i++ ){
 		if ( connectedNodes.indexOf(nodes[i].node_id) == -1 ){
 			notConnectedDots.push([nodes[i].lat, nodes[i].lng]);
+			console.log(nodes[i].node_id);
 		}
 	}
 	return notConnectedDots;
@@ -1393,6 +1395,7 @@ function getNotConnectedDots(){
 * массив узлов, не связанных с основной частью графа вида [[[lat1,lng1],[lat2,lng2]],...]
 **/
 function getNotConnectedRoads(callback){
+	getNotConnectedDots();
 	var notConnectedRoads = [];
 	var geom = null;
 	for ( var i = 0; i < m; i++ ){

@@ -74,6 +74,7 @@ map.on('click',function(e){
 /**
 * установка вражеских полков на карте по клику правой кнопки мыши
 **/
+
 map.on('contextmenu',function(e){
 	enemies.push({lat:e.latlng.lat,lng:e.latlng.lng,radius:radius});
 	setEnemy(e.latlng.lat,e.latlng.lng,radius);
@@ -92,6 +93,7 @@ function dots2latlngs(dots){
 /**
 * запрос у сервера и отображение на карте всех дорог
 **/
+
 function getAllRoads(){
 	Ajax.sendRequest('GET','/allroads','a=1',function(r){
 		//console.log(JSON.stringify(r));
@@ -104,6 +106,7 @@ function getAllRoads(){
 /**
 *  запрос у сервера и отображение на карте всех узлов
 **/
+
 function getAllNodes(){
 	Ajax.sendRequest('GET','/allnodes','a=1',function(n){
 		//console.log(JSON.stringify(n));
@@ -116,6 +119,7 @@ function getAllNodes(){
 /**
 * удаление с карты выведенных дорог
 **/
+
 function clearAllRoads(){
 	while( roads.length != 0 ){
 		map.removeLayer(roads[0]);
@@ -127,6 +131,7 @@ function clearAllRoads(){
 /**
 * удаление с карты выведенных узлов
 **/
+
 function clearAllNodes(){
 	while( nodes.length != 0 ){
 		map.removeLayer(nodes[0]);
@@ -138,6 +143,7 @@ function clearAllNodes(){
 /**
 * отображение на карте вражеских полков
 **/
+
 function setEnemy(lat,lng,radius){
 	
 	enemyCircle.push(L.circle([lat,lng], radius * 111300, {color: '#f03', fillColor: '#f03', opacity: 0.1,fillOpacity:0.1 }).addTo(map));
@@ -146,6 +152,7 @@ function setEnemy(lat,lng,radius){
 /**
 * удаление полков врага и запрещенных узлов
 **/
+
 function deleteEnemies(){
 	while ( enemyCircle.length != 0 ){
 		map.removeLayer(enemyCircle[0]);
@@ -166,6 +173,7 @@ function deleteEnemies(){
 /**
 * запрос запрещенных узлов у сервера и отображение на карте
 **/
+
 function getRestrictedNodes(){
 	var params = 'data='+JSON.stringify(enemies);
 	Ajax.sendRequest('GET','/restricted',params,function(dots){
@@ -179,10 +187,7 @@ function getRestrictedNodes(){
 * запрос маршрута у сервера и отображение маршрута на карте
 **/
 function showRoute(start,end, enemies){
-	if (!readySpatialite){
-		alert('Модуль spatialite не готов!');
-		return;
-	}
+	
 	route_line.setLatLngs(dots2latlngs([]));
 	showElem(preloader);
 	Time.start();
@@ -215,6 +220,7 @@ function hideElem(el){
 /**
 * инициализация модуля spatialite
 **/
+
 function initSpatialite(file){
 	readySpatialite = false;
 	showElem(preloader);
@@ -226,6 +232,7 @@ function initSpatialite(file){
 		var center = mapCenter[result.file];
 		map.setView(center, zoom);
 	});
+
 }
 
 /**
@@ -251,6 +258,7 @@ var mapCenter =
 * Получение значение радио переключателя вида задачи
 * @return значение
 **/
+
 function getRadio(){
     var inputs = document.getElementsByTagName('input');
     for ( var i = 0; i < inputs.length; i++ ){
@@ -266,6 +274,7 @@ function getRadio(){
 * вывод несвязной части графа путей
 * @param start начальная точка распостранения волны {lat:lat, lng:lng, radius:radius}
 **/
+
 function showNotConnected(start){
 	if (!readySpatialite){
 		alert('Модуль spatialite не готов!');
