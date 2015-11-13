@@ -1,0 +1,5 @@
+#! /bin/sh
+./geoservice_node.js 8001 &
+./geoservice_node.js 8002 &
+./geoservice_node.js 8003 &
+./geoservice_node.js 8004

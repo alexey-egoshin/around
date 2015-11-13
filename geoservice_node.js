@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 
+var port = parseInt(process.argv[2]);
+//console.log(process.argv);
+if (port == undefined) port = 8000;
 var express = require('express');
 var app = express();
 var server = require('http').Server(app);
-var port = 8000;
 var fs = require('fs');
 var sqlite = require('spatialite');
 var DB_DIR = '/home/user1/game1/db';
@@ -27,6 +29,7 @@ app.get('/route',function(req,res){
 	var db = new sqlite.Database(DB_DIR + '/' + db_file);
 	var scale = parseInt(data[5]);
 	getRoute([lat_start,lng_start], [lat_end,lng_end], db, scale,function(result){
+		db.close();
 		res.writeHead(200, {"Content-Type": "text/html","Access-Control-Allow-Origin": "*"});
 		res.write(JSON.stringify(result));
 		res.end();
